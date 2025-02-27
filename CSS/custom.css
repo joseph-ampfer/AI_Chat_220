@@ -1,0 +1,17 @@
+#searcharea {
+  background-image: url(../images/background.gif);
+  background-size: cover; /* Or 'cover' if you want it to stretch */
+  background-repeat: no-repeat;
+  background-position: center;
+  width: auto;  /* Can be changed to fit the image size */
+  height: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh; /* Adjust based on your needs */
+}
+
+#searchbar{
+  width: 900px;
+  height: 50px;
+}
