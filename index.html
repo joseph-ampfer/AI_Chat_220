@@ -135,7 +135,7 @@
     <script>
 
       // Constants
-      const JSON_BLOB_URL = 'https://jsonblob.com/api/jsonBlob/1344685504943284224';
+      const JSON_BLOB_URL = localStorage.getItem("MyBlobURL");
       const groqEndpoint = "https://api.groq.com/openai/v1/chat/completions";
       const chatMessages = document.getElementById('chatMessages');
       const chatForm = document.getElementById('chatForm');
