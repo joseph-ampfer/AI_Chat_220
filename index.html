@@ -40,10 +40,10 @@
         cursor: pointer;
       }
       .list-group-item[data-index]:hover {
-        background-color: rgb(186, 186, 186);
+        background-color: rgb(219, 220, 255);
       }
-      .list-group-item[data-index]:active {
-        background-color: rgb(186, 186, 186);
+      .selectedChat {
+        background-color: rgb(219, 220, 255);
       }
     </style>
   </head>
@@ -71,9 +71,10 @@
                 gemma2-9b-it
               </button>
               <ul id="modelSelect" class="dropdown-menu ">
-                <li><a class="dropdown-item" >gemma2-9b-it</a></li>
+                <li><a class="dropdown-item" >qwen-2.5-coder-32b</a></li>
                 <li><a class="dropdown-item" >llama-3.3-70b-versatile</a></li>
                 <li><a class="dropdown-item" >deepseek-r1-distill-qwen-32b</a></li>
+                <li><a class="dropdown-item" >gemma2-9b-it</a></li>
               </ul>
             </li>
           </ul>
@@ -91,8 +92,6 @@
             <h5>Chat History</h5>
             <ul id="chatHistory" class="list-group">
               <li class="list-group-item">Conversation 1</li>
-              <li class="list-group-item">Conversation 2</li>
-              <li class="list-group-item">Conversation 3</li>
               <!-- More conversation items -->
             </ul>
           </div>
@@ -147,19 +146,33 @@
       let conversation = [];
       let blobData = {};
       let currentChatIndex = 0;
-      let model = modelBtn.innerText;
+      let model = modelBtn.innerText.trim();
 
+      // Model select
       document.querySelectorAll('#modelSelect li a').forEach(e => {
         e.addEventListener('click', function() {
           modelBtn.innerText = e.innerText;
-          model = e.innerText;
+          model = e.innerText.trim();
         })
       });
 
+      // New chat
       document.getElementById('newChat').addEventListener('click', function() {
-        blobData.chats.push({});
+        // Add new chat blank to blobData
+        blobData.chats.push({'title': 'New chat', 'conversation': []});
+        // Clear screen
         chatMessages.innerHTML = '';
+        // Clear local conversation
+        conversation = [];
+        //adjust current index
         currentChatIndex = blobData.chats.length-1;
+        // Add to history aside
+        let li = document.createElement('li');
+        li.classList.add('list-group-item');
+        li.innerText = "New chat";
+        li.dataset.index = currentChatIndex;
+        li.addEventListener('click', () => loadChatByIndex(currentChatIndex));
+        document.querySelector('#chatHistory').prepend(li);
       })
 
 
@@ -204,7 +217,6 @@
 
       // Load chats for side bar
       async function loadSideBar() {
-
         blobData.chats.forEach((chat, index) => {
           let title = chat.title;
           let li = document.createElement('li');
@@ -212,25 +224,26 @@
           li.innerText = title;
           li.dataset.index = index;
           li.addEventListener('click', () => loadChatByIndex(index));
-          document.querySelector('#chatHistory').appendChild(li);
+          document.querySelector('#chatHistory').prepend(li);
         }); 
-
       }
 
       function loadChatByIndex(index) {
         chatMessages.innerHTML = '';
         const selectedChat = blobData.chats[index];
-        if (selectedChat && selectedChat.messages) {
-          conversation = selectedChat.messages;
+        if (selectedChat && selectedChat.conversation) {
+          conversation = selectedChat.conversation;
 
            // Display chat history with append message
           for (let i = 0; i < conversation.length; i++) {
-            appendMessage(conversation[i].content, i % 2 === 0)
+            appendMessage(conversation[i].content, conversation[i].role == 'user');
           }
           currentChatIndex = index;
           console.log('Current chat index:', currentChatIndex);
           console.log(conversation);
         }
+        document.querySelector('.selectedChat')?.classList.toggle('selectedChat');
+        document.querySelector(`[data-index="${currentChatIndex}"]`).classList.toggle('selectedChat');
       }
 
       // Load conversation history from jsonBlob
@@ -282,7 +295,16 @@
           conversation.push({ role: "assistant", content: botMessage });
 
           // Update the blob data with the new conversation
-          blobData.chats[currentChatIndex].messages = conversation;
+          blobData.chats[currentChatIndex].conversation = conversation;
+
+          // Update chat title
+          if (blobData.chats[currentChatIndex].title == 'New chat') {
+            let title = message.split(" ").slice(0, 3).join(" ");
+            blobData.chats[currentChatIndex].title = title;
+            console.log(title);
+            console.log(blobData.chats[currentChatIndex].title);
+            document.querySelector(`[data-index="${currentChatIndex}"]`).innerText = title;
+          }
 
           // Update conversation in JSON blob
           await updateJSONBlob(blobData);
@@ -307,7 +329,6 @@
 
       // Load the chat on page load
       loadChat();
-      loadSideBar();
  
      
     </script>
