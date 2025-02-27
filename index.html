@@ -45,6 +45,9 @@
       .selectedChat {
         background-color: rgb(219, 220, 255);
       }
+      pre {
+        border-radius: 0.75rem;
+      }
     </style>
   </head>
   <body>
@@ -129,6 +132,11 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <!-- Include Marked.js to process markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script> 
+    <!-- Include highlight js -->
+    <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/styles/an-old-hope.min.css">
+    <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
+    <!-- and it's easy to individually load additional languages -->
+    <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/go.min.js"></script>
     <!-- API Keys -->
     <script src="./config/keys.js"></script>
     <script>
@@ -238,11 +246,12 @@
             appendMessage(conversation[i].content, conversation[i].role == 'user');
           }
           currentChatIndex = index;
-          console.log('Current chat index:', currentChatIndex);
+          hljs.highlightAll();
+          console.log('Loaded chat by index:', currentChatIndex);
           console.log(conversation);
         }
-        document.querySelector('.selectedChat')?.classList.toggle('selectedChat');
-        document.querySelector(`[data-index="${currentChatIndex}"]`).classList.toggle('selectedChat');
+        document.querySelector('.selectedChat')?.classList.remove('selectedChat');
+        document.querySelector(`[data-index="${currentChatIndex}"]`).classList.add('selectedChat');
       }
 
       // Load conversation history from jsonBlob
@@ -317,6 +326,7 @@
           const resJson = await response.json();
           const botMessage = resJson.choices?.[0]?.message?.content ?? "No response.";
           appendMessage(botMessage, false); // Display bot response
+          hljs.highlightAll();
           conversation.push({ role: "assistant", content: botMessage });
 
           // Update the blob data with the new conversation
