@@ -78,6 +78,7 @@
                 <li><a class="dropdown-item" >llama-3.3-70b-versatile</a></li>
                 <li><a class="dropdown-item" >deepseek-r1-distill-qwen-32b</a></li>
                 <li><a class="dropdown-item" >gemma2-9b-it</a></li>
+                <li><a class="dropdown-item" >llama-3.2-11b-vision-preview</a></li>
               </ul>
             </li>
           </ul>
@@ -119,6 +120,7 @@
                 placeholder="Type your message..."
                 autocomplete="off"
               />
+              <input type="file" id="imageUpload" accept="image/*" class="form-control me-2 d-none">
               <button class="btn btn-primary" type="submit">Send</button>
             </form>
           </div>
@@ -143,24 +145,59 @@
 
       // Constants
       const JSON_BLOB_URL = 'https://jsonblob.com/api/jsonBlob/1344049234386804736';
-      const groqEndpoint = "https://api.groq.com/openai/v1/chat/completions";
+      const groqEndpoint = 'https://api.groq.com/openai/v1/chat/completions';
       const chatMessages = document.getElementById('chatMessages');
       const chatForm = document.getElementById('chatForm');
       const messageInput = document.getElementById('userMessage');
       const modelDropdown = document.querySelector('#modelSelect');
       const modelBtn = document.querySelector('#modelSelect-btn');
+      const imageInput = document.getElementById("imageUpload");
 
       // Global Variables
       let conversation = [];
       let blobData = {};
       let currentChatIndex = -1;
       let model = modelBtn.innerText.trim();
+      let uploadedImageBase64 = null;
+
+      // Handle Image Upload
+      imageInput.addEventListener("change", function (event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+
+        // When the file has been read...
+        reader.onload = function () {
+          // The result is a Data URL that includes the base64 string
+          const dataURL = reader.result;
+          uploadedImageBase64 = dataURL;
+          displayImagePreview(dataURL);
+        };
+
+        // Read the file as a Data URL (base64 encoded)
+        reader.readAsDataURL(file);
+
+      });
+
+      // Display Image Preview in Chat
+      function displayImagePreview(imageBase64) {
+        const imgDiv = document.createElement("div");
+        imgDiv.classList.add("text-end", "mb-3");
+        imgDiv.innerHTML = `<img src="${imageBase64}" class="img-thumbnail" style="max-width: 200px;">`;
+        chatMessages.appendChild(imgDiv);
+      }
 
       // Model select
       document.querySelectorAll('#modelSelect li a').forEach(e => {
         e.addEventListener('click', function() {
           modelBtn.innerText = e.innerText;
           model = e.innerText.trim();
+          if (model == 'llama-3.2-11b-vision-preview') {
+            imageInput.classList.remove('d-none');
+          } else {
+            imageInput.classList.add('d-none');
+          }
         })
       });
 
@@ -302,11 +339,23 @@
             document.querySelector('#chatHistory').prepend(li);
           }
 
+          // Check if using image model
+          let messageContent;
+          if (model == 'llama-3.2-11b-vision-preview'){
+            messageContent = [ {type:'text', text: message} ];
+            if (uploadedImageBase64) {
+              messageContent.push( {type: 'image_url', image_url: { url: uploadedImageBase64 } });
+              displayImagePreview(uploadedImageBase64);
+            } 
+          } else {
+            messageContent = message;
+          }
+
           // Display message
           appendMessage(message); // Display user message
 
           // Add message to conversation
-          conversation.push({ role: 'user', content: message });
+          conversation.push({ role: 'user', content: messageContent });
 
           // Fetch ai response
           const response = await fetch(groqEndpoint, {
@@ -326,7 +375,12 @@
           const resJson = await response.json();
           const botMessage = resJson.choices?.[0]?.message?.content ?? "No response.";
           appendMessage(botMessage, false); // Display bot response
-          hljs.highlightAll();
+          hljs.highlightAll(); // Highlight code
+
+          // Decided to not storing image in jsonblob, only text
+          if (conversation[conversation.length-1].content[0].type) {
+            conversation[conversation.length-1].content = conversation[conversation.length-1].content[0].text;
+          }
           conversation.push({ role: "assistant", content: botMessage });
 
           // Update the blob data with the new conversation
@@ -338,6 +392,8 @@
           console.error("Request failed:", error);
           appendMessage("🚫 Oops! Something went wrong. Please try again.", false);
         } finally {
+          uploadedImageBase64 = null;
+          imageInput.value = "";
           chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to bottom
         }
       }
@@ -355,6 +411,48 @@
 
       // Load the chat on page load
       loadChat();
+
+
+      // axios.post(
+      //   "https://api.groq.com/openai/v1/chat/completions",
+      //   {
+      //    "messages": [
+      //      {
+      //        "role": "user",
+      //        "content": [
+      //          {
+      //            "type": "text",
+      //            "text": "help"
+      //          },
+      //          {
+      //            "type": "image_url",
+      //            "image_url": {
+      //              "url": "data:image/png;base64,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"
+      //            }
+      //          }
+      //        ]
+      //      }
+      //    ],
+      //    "model": "llama-3.2-11b-vision-preview",
+      //    "temperature": 1,
+      //    "max_completion_tokens": 1024,
+      //    "top_p": 1,
+      //    "stream": false,
+      //    "stop": null
+      //  },
+      //  {
+      //   headers: {
+      //       "Content-Type": "application/json",
+      //       Authorization: `Bearer ${GROQ_API_KEY}`
+      //     }
+      //   }
+      // )
+      // .then(function(response) {
+      //   console.log(response);
+      // })
+      // .catch(function (error) {
+      //   console.log(error);
+      // });
  
      
     </script>
