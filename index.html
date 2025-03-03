@@ -78,7 +78,7 @@
                 <li><a class="dropdown-item" >llama-3.3-70b-versatile</a></li>
                 <li><a class="dropdown-item" >deepseek-r1-distill-qwen-32b</a></li>
                 <li><a class="dropdown-item" >gemma2-9b-it</a></li>
-                <li><a class="dropdown-item" >llama-3.2-11b-vision-preview</a></li>
+                <li><a class="dropdown-item" >llama-3.2-90b-vision-preview</a></li>
               </ul>
             </li>
           </ul>
@@ -113,6 +113,7 @@
           </div>
           <div class="chat-input">
             <form id="chatForm" class="d-flex">
+              <!-- Text input -->
               <input
                 type="text"
                 class="form-control me-2"
@@ -120,7 +121,15 @@
                 placeholder="Type your message..."
                 autocomplete="off"
               />
-              <input type="file" id="imageUpload" accept="image/*" class="form-control me-2 d-none">
+              <!-- Audio recording button  -->
+              <button id="toggle-recording" class="btn btn btn-primary me-2" type="button" onclick="toggleRecording()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-mic" viewBox="0 0 16 16">
+                  <path d="M3.5 6.5A.5.5 0 0 1 4 7v1a4 4 0 0 0 8 0V7a.5.5 0 0 1 1 0v1a5 5 0 0 1-4.5 4.975V15h3a.5.5 0 0 1 0 1h-7a.5.5 0 0 1 0-1h3v-2.025A5 5 0 0 1 3 8V7a.5.5 0 0 1 .5-.5"/>
+                  <path d="M10 8a2 2 0 1 1-4 0V3a2 2 0 1 1 4 0zM8 0a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V3a3 3 0 0 0-3-3"/>
+                </svg>
+              </button>
+              <!-- Image upload -->
+              <input type="file" id="imageUpload" accept="image/*" class="form-control me-2 d-none"/>
               <button class="btn btn-primary" type="submit">Send</button>
             </form>
           </div>
@@ -161,24 +170,47 @@
       let uploadedImageBase64 = null;
 
       // Handle Image Upload
+      // Global variable to keep track of the last file name
+      let lastFileName = "";
+
       imageInput.addEventListener("change", function (event) {
+        console.log("Image input change event triggered.");
+        
         const file = event.target.files[0];
-        if (!file) return;
+        if (!file) {
+          console.log("No file selected.");
+          return;
+        }
+        
+        // Log detailed information about the file
+        console.log("File selected:", file.name, 
+                    "Size:", file.size, 
+                    "Type:", file.type, 
+                    "Last Modified:", new Date(file.lastModified).toLocaleString());
+        
+        // Check if the same file is being selected again
+        if (lastFileName === file.name) {
+          console.log("The same file has been selected as before.");
+        } else {
+          console.log("A new file has been selected.");
+        }
+        lastFileName = file.name;
 
         const reader = new FileReader();
 
-        // When the file has been read...
         reader.onload = function () {
           // The result is a Data URL that includes the base64 string
           const dataURL = reader.result;
+          console.log("Data URL generated (first 50 chars):", dataURL.substring(0, 50) + "...");
           uploadedImageBase64 = dataURL;
-          displayImagePreview(dataURL);
+          //displayImagePreview(dataURL);
         };
 
         // Read the file as a Data URL (base64 encoded)
         reader.readAsDataURL(file);
-
       });
+
+
 
       // Display Image Preview in Chat
       function displayImagePreview(imageBase64) {
@@ -193,7 +225,7 @@
         e.addEventListener('click', function() {
           modelBtn.innerText = e.innerText;
           model = e.innerText.trim();
-          if (model == 'llama-3.2-11b-vision-preview') {
+          if (model == 'llama-3.2-90b-vision-preview') {
             imageInput.classList.remove('d-none');
           } else {
             imageInput.classList.add('d-none');
@@ -253,6 +285,21 @@
           messageDiv.innerHTML = `<span class="badge bg-primary">${message}</span>`;
         } else {
           messageDiv.innerHTML = marked.parse(message);
+          
+          // Make copy button
+          const copyButton = makeCopyBtn(message);
+
+          // Make div
+          const bottomInfo = document.createElement('div');
+
+          // Make model text
+          const modelSpan = document.createElement('span');
+          modelSpan.classList.add('blockquote-footer');
+          modelSpan.innerText = model;
+          bottomInfo.appendChild(modelSpan);
+          bottomInfo.appendChild(copyButton);
+
+          messageDiv.appendChild(bottomInfo);
         }
         chatMessages.appendChild(messageDiv);
       }
@@ -280,7 +327,13 @@
 
            // Display chat history with append message
           for (let i = 0; i < conversation.length; i++) {
-            appendMessage(conversation[i].content, conversation[i].role == 'user');
+            // If content is an array, assume image formatting and display the image
+            if (Array.isArray(conversation[i].content)) {
+              conversation[i].content.length > 1 && displayImagePreview(conversation[i].content[1]?.image_url.url);
+              appendMessage(conversation[i].content[0].text);
+            } else {
+              appendMessage(conversation[i].content, conversation[i].role == 'user');
+            }
           }
           currentChatIndex = index;
           hljs.highlightAll();
@@ -341,11 +394,13 @@
 
           // Check if using image model
           let messageContent;
-          if (model == 'llama-3.2-11b-vision-preview'){
+          if (model == 'llama-3.2-90b-vision-preview'){
             messageContent = [ {type:'text', text: message} ];
             if (uploadedImageBase64) {
               messageContent.push( {type: 'image_url', image_url: { url: uploadedImageBase64 } });
               displayImagePreview(uploadedImageBase64);
+              // Only one image per chat
+              imageInput.classList.add('d-none');
             } 
           } else {
             messageContent = message;
@@ -377,10 +432,11 @@
           appendMessage(botMessage, false); // Display bot response
           hljs.highlightAll(); // Highlight code
 
-          // Decided to not storing image in jsonblob, only text
-          if (conversation[conversation.length-1].content[0].type) {
-            conversation[conversation.length-1].content = conversation[conversation.length-1].content[0].text;
-          }
+
+          // // Decided to not storing image in jsonblob, only text
+          // if (conversation[conversation.length-1].content[0].type) {
+          //   conversation[conversation.length-1].content = conversation[conversation.length-1].content[0].text;
+          // }
           conversation.push({ role: "assistant", content: botMessage });
 
           // Update the blob data with the new conversation
@@ -399,6 +455,40 @@
       }
 
 
+      // Helper: make copy button
+      function makeCopyBtn(toCopy) {
+        // Create copy button for chatContent
+        const copyButton = document.createElement('button');
+        copyButton.title = "Copy";
+        copyButton.innerHTML = 
+        `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 17">
+            <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/>
+          </svg>`;
+        copyButton.classList.add('btn', );
+
+        // Add copy functionality
+        copyButton.addEventListener('click', function() {
+          //const text = botMessage;
+          navigator.clipboard.writeText(toCopy)
+            .then(() => {
+              // Mark done and then revert back
+              copyButton.innerHTML = 
+              `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-check2" viewBox="0 0 16 16">
+                  <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0"/>
+                </svg>`;
+              setTimeout(() => {
+                copyButton.innerHTML =  
+                  `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 17">
+                    <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/>
+                  </svg>`;
+              }, 1000);
+            })
+            .catch(err => console.error("Failed to copy: ", err))
+        });
+        return copyButton;
+      }
+
+
       // Handle form submission
       chatForm.addEventListener("submit", (e) => {
         e.preventDefault();
@@ -413,46 +503,101 @@
       loadChat();
 
 
-      // axios.post(
-      //   "https://api.groq.com/openai/v1/chat/completions",
-      //   {
-      //    "messages": [
-      //      {
-      //        "role": "user",
-      //        "content": [
-      //          {
-      //            "type": "text",
-      //            "text": "help"
-      //          },
-      //          {
-      //            "type": "image_url",
-      //            "image_url": {
-      //              "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQMAAADCCAMAAAB6zFdcAAAAhFBMVEX///8AAADS0tL19fXa2tru7u7f39/Dw8O0tLTLy8ujo6N9fX38/Pzx8fFzc3OVlZVpaWlTU1MdHR0+Pj6enp7l5eVZWVm9vb1gYGBQUFB5eXmqqqqwsLAyMjLOzs65ubkkJCSIiIhCQkI2NjaXl5cUFBQiIiIVFRULCwssLCyMjIxJSUl2IfZsAAAJAElEQVR4nO2daXuyOhCGQRYrgqKCC2or1b5u////HTIBmYRgg0vhOtfcX7RADHnIxswkNQyCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiC6BpWEAR+syRB8ySdxjEzPhslObAktt61o9WkYP7A3f0NK1agXpMUC7OBBmbJ6ZHb+wtGZo0G/QxlithsoIGDNDg+c5/vo7c16zSYZodVbd4/NdHgE2lgPnev7+Hru7g7hQbbGg2uZlUDJxmWJBY6s86unA4GWZ0a9Acvvv2XMDWbazDMDi+nkgYxftqmg86k2d+TV9/3KzlnNxguazTYKysve67f1s9dDQJ0ZpL9nXzMzWOo7lxaZ2eev4ywqkHvEEURe9bZ5+FDOMMutqBL0KsHu/LwpJMziiF7NgoNIlwiPKo7vCOwZA18B4NOWHW/1C0UGnj4zpfoxCz7e2FUNagF6o2ZenP47GSnyGhQD9ilqeH7AdOg55d127nOS1aoP7DcvpeyisG6UnP45qI8jEIDx7Ztl3WY2acd3w4LFTsjup2p7xML7E43BoUGABsbxSMwHCC825nfNYjlZtUp7mkg9uS6GqBO8ZKsrqBJn50Yv6kIT1OnwbmqQW1bqAXeRuaBEcMY6b7oll9OnQaj5XJZM6Lrjwv4lam73UGtBnfQ14C3Ac7O+v3yloChu5kNBRqFpv3ALt6xhp2cJnICNrVreH+NksR9z/MG3a0EBEEQBEEQBEEQBCHhjCHiYB5pvs36yJ16aJ6dYGuIx9dGeb+Jj9Kwo+fywOawVfP8lkiDTdO830MPG/hkG6fluq5zL0Vzi2BqlhoIsQjxLwnfCLSD89oDt/tIOjkwFb4g9PAa14OY+9hyDa553kf2mTxYgOfh5nEnr+E76SzT4CInYU9yu1kzvC/FT8aRVyKY23thoZ1d5h3k3ojtq4rUmN7034nHRDDT8FSyCSo1mKsqh5SoBJ8pj4IGnyzvZZH3rk0TqwXOcXgW39KpT5UGrNV4/WSyPFS6ilsitQYs5fWK+sQ8b5cdur6gKM/hsygT5CwzjP5isRhnx8LsyxcqbYAKqHQs1deDI0uBx4U8b4gDW7+wNA/hnCvdwRSXBLkbbHzcM6pYPQw+c/V8o6oBd7udX1eYx8idP0LdPuOyoqLw+USYKJJoIWuwePSHXksKd7EVb+NYUw/ihZcs2aXQejbVX3NxXF6185Q0gFgMc69yz/8lfMyWx+esG+gfFP3BDagQafV4fZ8IiBqo8/5zuP9PGSmnHBcK+i/Q4Ls+778kvFMXFfMDP4pG4Yx9Y5GJ5oc6kaYG8H3WuueRd3Hn64whdQlQHPlJw3iRvS/Gx5qurDYuj4M04LPubZ53e1KchKcm3fLnz3kqx8vwfnwL7xmVFwwNkAZC1sqopT9BrLhaI9SwvPyRZ1dq0Bfzbk2DtLkGZcTm6JEp/uSmwVDMuzUNXGFS96lXKL8fDYfpx2PTGpvlYxXfEB0OSyEIgiAIgiAIgiAIwxikq/1+njawbrrj+X6/HOu7zAfpZL+fJRtsJxhv91uFWbYNrFVhyJjpGgWSIoVmKEowuxlLSme1+6A97g3429Kas6+ctXy/at5YlSkUbhYF2G1V1LZAGfTQDrCU99+YRwfIQTHMIV3ZsIAv/k15Ch0D0Job3y5Q6jzUILcndkMDsC1nn2PVY2UayOtR+fYfMV+u+A91InEfgdWEerPOUu7ylMaiqErd0MCIBx5zfR/q6oGswaC4dycW+481NpKiyBL/VmGGuUm1XEbeEQ0YQe8CnaJ83FFocMifqt2TulAcqyRFdMQxqAtdY5Abp+cd04A7nMSVrK5t26zVTtgXVFxYsduDAn8L4RRCPah2r3lzY5FcmQa7Xq9jGsDtn4bCeP+Ni4QCReD5LfPjuPG4H4hFNZMUUrBohmi1QG2qI4zzIuEVriuswabmuKntbLLAv8KDV6C+dU0DO3a44wcdu9ZowKMGvMCFLygqycZxefII0zvJv9M1DRhCzFjGJooi1lPOvCg6oOPQH7A5LoQYomDVe/0B73CmOEKpixpARZDeGVTjwvh2HVMNDSV3xoV8liT0ud3RwBosohSm/apl/7XzA+gj2VCHIgvr5gfFpHCt+J1OaMAD0Z0i7E6a+irniew6tn2BHI/jYCcqHjV5XO5uOGKEhczd0SB3go/4roFyJBnToBKazWd5CR8edV6fRT97MWp2SAMfvdQd9VzgaMSoDdrCOZhd18CwivmOOdGNhBgVKbT2tvm8o0H42D2/HvswmkyWY839PBhulKUYeXo2F3eDJ5CbovU47HBnNwwjCIIgCIIgCIIgCIFeFIbh+KvRwhRnmaUR/rFA9rdq6auaYJOGYfrVlXUL8baRSSQHTLBIAzBMaq9VvBRZtr7SGcDbIevv/82NiqUG3CSnmz4ps9TYk/j9wAM9hVeliZR5iFWxJrmZ9KaB/a+JhsIeJG2v9GWwB3j28ycrl5dpUFnKGXjFosBcA7swMIoa+C4GNX3uqvJ5JJRipeifc85Nm+BgkPf3UGmAdtjmGpQhFaIGtRuvQ50zamRvgxS6psCdSJ0csK7TYPdTXg5RGbPfNEA/7QfuZ6a2+6Nqfm1gocA0obiWZfnsSa397Bs+zioOjy0qNfgaNNCAwxfN6ngo3k8ZnSeEGwZCCZAZ3TJDN1/6zMs1Pno+97yJGgSXcclF1oCvFu1GkKaDHE14jlOrgQ+lQRpAS1docJd+teK1BzTkkc0jBFAgSq0GHKQBoNDAwsF6fWlKCN1PR1wsMFaHxRcUkGmNkmTIRq/JMElGlVFcQ4O7/5CDHXpgx7W3AFED4AOENqE4q9oP6wENpP5gMBj0G3j33sptRwt/qtBAOUcCntXAZvOm52//JcC9s+ghEEPeuOwpDSzsbN0o/pVJ6/si5fBZ3zbirzHyGwybH6gnchoa/JptJS62LfD/4ZrKJy3HcdRmhf+VBrcAzcpOUXeR2zhooL/XkaVqeS0SH5ann9N12GirogOb+6E27maTwot6CFHhszlkJ2wHBEEQBEEQBEEQBEEQBEEQBEEQBEEQBEEQBEEQBEEQhJr/AJ6GZ9/JniCNAAAAAElFTkSuQmCC"
-      //            }
-      //          }
-      //        ]
-      //      }
-      //    ],
-      //    "model": "llama-3.2-11b-vision-preview",
-      //    "temperature": 1,
-      //    "max_completion_tokens": 1024,
-      //    "top_p": 1,
-      //    "stream": false,
-      //    "stop": null
-      //  },
-      //  {
-      //   headers: {
-      //       "Content-Type": "application/json",
-      //       Authorization: `Bearer ${GROQ_API_KEY}`
-      //     }
-      //   }
-      // )
-      // .then(function(response) {
-      //   console.log(response);
-      // })
-      // .catch(function (error) {
-      //   console.log(error);
-      // });
+      // Audio transcription!!!!
+      let isRecording = false;
+
+      // Define icon templates
+      const micIcon = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-mic" viewBox="0 0 16 16">
+          <path d="M3.5 6.5A.5.5 0 0 1 4 7v1a4 4 0 0 0 8 0V7a.5.5 0 0 1 1 0v1a5 5 0 0 1-4.5 4.975V15h3a.5.5 0 0 1 0 1h-7a.5.5 0 0 1 0-1h3v-2.025A5 5 0 0 1 3 8V7a.5.5 0 0 1 .5-.5"/>
+          <path d="M10 8a2 2 0 1 1-4 0V3a2 2 0 1 1 4 0zM8 0a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V3a3 3 0 0 0-3-3"/>
+        </svg>
+      `;
+
+      const stopIcon = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-stop-circle" viewBox="0 0 16 16">
+          <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+          <path d="M5 6.5A1.5 1.5 0 0 1 6.5 5h3A1.5 1.5 0 0 1 11 6.5v3A1.5 1.5 0 0 1 9.5 11h-3A1.5 1.5 0 0 1 5 9.5z"/>
+        </svg>
+      `;
+
+      let audioStream;
+      let mediaRecorder;
+      let recordedChunks = [];
+      async function startRecording() {
+        try {
+          // Request access to the microphone
+          audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          
+          // Create a MediaRecorder instance
+          mediaRecorder = new MediaRecorder(audioStream);
+          
+          // When data is available, push it to recordedChunks
+          mediaRecorder.addEventListener("dataavailable", event => {
+            if (event.data.size > 0) {
+              recordedChunks.push(event.data);
+            }
+          });
+          
+          // When recording stops, create a blob from the chunks and trigger a download
+          mediaRecorder.addEventListener("stop", async () => {
+            const blob = new Blob(recordedChunks, { type: "audio/webm" });
+
+            const formData = new FormData();
+            formData.append('file', blob, 'recording.webm');
+            formData.append('model', 'whisper-large-v3-turbo');
+            formData.append('temperature', 0);
+            formData.append('response_format', 'json');
+            formData.append('language', 'en');
+
+
+            const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${GROQ_API_KEY}`
+                // Let the browser set the correct Content-Type header for FormData.
+              },
+              body: formData
+            });
+            const result = await response.json();
+            console.log('Transcription result:', result);
+            console.log(result.text);
+            sendMessageToAI(result.text);
+
+            recordedChunks = [];
+          });
+          
+          mediaRecorder.start();
+          console.log("Recording started");
+        } catch (err) {
+          console.error("Error accessing the microphone", err);
+        }
+      }
+
+      function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state !== "inactive") {
+          mediaRecorder.stop();
+          audioStream.getTracks().forEach(track => track.stop())
+          console.log("Recording stopped and microphone released");
+        }
+      }
+
+      function toggleRecording() {
+        const toggleBtn = document.getElementById('toggle-recording');
+        if (isRecording) {
+          stopRecording();
+          toggleBtn.classList.remove('btn-danger');
+          toggleBtn.classList.add('btn-primary');
+          toggleBtn.innerHTML = micIcon; // Show mic icon
+        } else {
+          startRecording();
+          toggleBtn.classList.remove('btn-primary');
+          toggleBtn.classList.add('btn-danger');
+          toggleBtn.innerHTML = stopIcon; // Show stop icon
+        }
+        isRecording = !isRecording;
+      }
+
  
      
     </script>
