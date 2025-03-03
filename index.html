@@ -103,7 +103,7 @@
 
         <!-- Main Chat Interface -->
         <main class="col-md-9 chat-area">
-          <div class="chat-messages d-flex flex-column flex-fill" id="chatMessages">
+          <div class="chat-messages d-flex flex-column flex-fill text-break" id="chatMessages">
             <!-- Chat messages will appear here -->
             
             <div class="flex-grow-1 d-flex align-items-center justify-content-center text-center" role="alert">
@@ -168,6 +168,7 @@
       let currentChatIndex = -1;
       let model = modelBtn.innerText.trim();
       let uploadedImageBase64 = null;
+      let modelTracking = {};
 
       // Handle Image Upload
       // Global variable to keep track of the last file name
@@ -277,7 +278,7 @@
       
 
       // Helper: Display message in chat
-      function appendMessage(message, isUser = true) {
+      function appendMessage(message, isUser = true, model2 = 'Unkown model') {
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('mb-3');
         if (isUser) {
@@ -295,7 +296,7 @@
           // Make model text
           const modelSpan = document.createElement('span');
           modelSpan.classList.add('blockquote-footer');
-          modelSpan.innerText = model;
+          modelSpan.innerText = model2;
           bottomInfo.appendChild(modelSpan);
           bottomInfo.appendChild(copyButton);
 
@@ -322,8 +323,10 @@
       function loadChatByIndex(index) {
         chatMessages.innerHTML = '';
         const selectedChat = blobData.chats[index];
+
         if (selectedChat && selectedChat.conversation) {
           conversation = selectedChat.conversation;
+          modelTracking = selectedChat.modelTracking || {}; // Ensure modelTracking is an object
 
            // Display chat history with append message
           for (let i = 0; i < conversation.length; i++) {
@@ -332,7 +335,7 @@
               conversation[i].content.length > 1 && displayImagePreview(conversation[i].content[1]?.image_url.url);
               appendMessage(conversation[i].content[0].text);
             } else {
-              appendMessage(conversation[i].content, conversation[i].role == 'user');
+              appendMessage(conversation[i].content, conversation[i].role == 'user', modelTracking[i]);
             }
           }
           currentChatIndex = index;
@@ -367,7 +370,7 @@
       // Send user message and get bot response
       async function sendMessageToAI(message) {
         try {
-          // Check if we're in a new unsaved chat
+          // Check if we're in a NEW unsaved chat
           if (currentChatIndex === -1) {
             chatMessages.innerHTML = '';
             // Create new chat entry with the first message as title
@@ -376,6 +379,7 @@
             // add to blobData
             blobData.chats.push({
               'title': title,
+              'modelTracking': {},
               'conversation': []
             });
 
@@ -392,9 +396,11 @@
             document.querySelector('#chatHistory').prepend(li);
           }
 
+          let currentModel = model;
+
           // Check if using image model
           let messageContent;
-          if (model == 'llama-3.2-90b-vision-preview'){
+          if (currentModel == 'llama-3.2-90b-vision-preview'){
             messageContent = [ {type:'text', text: message} ];
             if (uploadedImageBase64) {
               messageContent.push( {type: 'image_url', image_url: { url: uploadedImageBase64 } });
@@ -419,7 +425,7 @@
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${GROQ_API_KEY}`
             },
-            body: JSON.stringify({ messages: conversation, model: model}),
+            body: JSON.stringify({ messages: conversation, model: currentModel}),
           });
 
           if (!response.ok) {
@@ -429,7 +435,7 @@
 
           const resJson = await response.json();
           const botMessage = resJson.choices?.[0]?.message?.content ?? "No response.";
-          appendMessage(botMessage, false); // Display bot response
+          appendMessage(botMessage, false, currentModel); // Display bot response
           hljs.highlightAll(); // Highlight code
 
 
@@ -437,10 +443,18 @@
           // if (conversation[conversation.length-1].content[0].type) {
           //   conversation[conversation.length-1].content = conversation[conversation.length-1].content[0].text;
           // }
+
+          // Update conversation
           conversation.push({ role: "assistant", content: botMessage });
+
+          // Update modelTracking
+          modelTracking[conversation.length-1] = currentModel; 
 
           // Update the blob data with the new conversation
           blobData.chats[currentChatIndex].conversation = conversation;
+
+          // Update the blob data with the new model tracking
+          blobData.chats[currentChatIndex].modelTracking = modelTracking;
 
           // Update conversation in JSON blob
           await updateJSONBlob(blobData);
