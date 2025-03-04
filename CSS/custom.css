@@ -21,3 +21,14 @@
   position: fixed;
   width: 100%;
 }
+
+.section1 {
+  margin-bottom: 45px;
+}
+
+footer{
+  background-color: black;
+  width: 100%;
+  height: 150px;
+}
+

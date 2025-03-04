@@ -42,30 +42,16 @@
     </form>
   </div>
   <!-- This <div> will host the posts that are made and also serve as the search results area -->
-  <div class="container text-center">
-    <h1>Recent AI Posts from our Users</h1><br><br>
+  <div class="container text-center mb-5">
+    <h1 style="margin-bottom: 45px">Recent AI Posts from our Users</h1>
     <div class="row" id="web-content">
-      <div class="col-4">
-        <div class="card" style="width: 18rem;">
-          <div class="card-body">
-            <h5 class="card-title">This</h5>
-            <h6>Chat by:</h6>
-            <p class="card-text">This</p>
-            <a href="detail.html" class="card-link">This</a>
-          </div>
-        </div>
-      </div>
-      <div class="col">
-        Column
-      </div>
-      <div class="col">
-        Column
-      </div>
     </div>
   </div>
   <!-- Footer for spacing and "copyright" stuff -->
-  <footer>
-
+  <footer class="container-fluid">
+    <div class="container text-center">
+    <p style="color: white"> &copy; ASE_AI_220</p>
+    </div>
   </footer>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
@@ -85,14 +71,15 @@
 
     async function loadPosts() {
       posts = await fetchJSON(JSON_BLOB_URL);
-      
-      for(let i = 0; i<posts.length; i++){
+
+      for (let i = 0; i < posts.length; i++) {
         let postCol = document.createElement("div");
         postCol.classList.add("col-4");
 
         let postCard = document.createElement("div");
         postCard.classList.add("card");
-        postCard.style.width = "18rem";
+        postCard.style.width = "20rem";
+        postCard.style.margin = "auto";
 
         let cardData = document.createElement("div");
         cardData.classList.add("card-body");
@@ -100,15 +87,30 @@
         let cardTitle = document.createElement("h5");
         cardTitle.classList.add("card-title");
         cardTitle.innerText = posts[i].conversation["title"];
+        cardData.appendChild(cardTitle);
+
         let cardAuthor = document.createElement("h6");
         cardAuthor.innerText = `Chat by: ${posts[i].username}`;
-        let cardText = document.createElement("p");
-        let cardLink = document.createElement("a");
+        cardData.appendChild(cardAuthor);
 
-        // cardTitle, cardAuthor, cardText, cardLink
+        let cardText = document.createElement("p");
+        cardText.innerText = posts[i].conversation["summary"];
+        cardData.appendChild(cardText);
+
+        let cardLink = document.createElement("a");
+        cardLink.setAttribute('href', 'detail.html');
+        cardLink.classList.add("card-link");
+        cardLink.innerText = 'Check out this Conversation';
+        cardData.appendChild(cardLink);
+
+        postCard.appendChild(cardData);
+        postCol.appendChild(postCard);
+        divRow.appendChild(postCol);
+
       }
 
     }
+
     loadPosts();
 
   </script>
