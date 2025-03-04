@@ -50,8 +50,8 @@
 
             document.querySelector("#submit").addEventListener("click",async function() {
                 let isUsernameAvailable = true;
-                let newEmail = document.querySelector('#exampleInputEmail1').value;
-                let newPassword = document.querySelector('#exampleInputPassword1').value;
+                let newEmail = document.querySelector('#exampleInputEmail1').value.trim();
+                let newPassword = document.querySelector('#exampleInputPassword1').value.trim();
                 let alert = document.querySelector('#liveAlertPlaceholder');
 
                 alert.innerHTML = '';
