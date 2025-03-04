@@ -95,7 +95,9 @@
                     //blobURL = await blobURL.Location;
                     //let url = blobURL.Location;
                     let newUserBlob = putRes.headers.get('Location');
-                    localStorage.setItem("MyBlobURL", newUserBlob);
+                    let correctedURL = newUserBlob.replace("http","https");
+                    console.log(correctedURL);
+                    localStorage.setItem("MyBlobURL", correctedURL);
                     //console.log(putRes.headers.get('Location'));
                     users.push({"email":newEmail,"password":newPassword,"blobURL":newUserBlob});
                     let response = await fetch(usersBlobApi,
