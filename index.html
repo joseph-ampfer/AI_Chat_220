@@ -12,7 +12,7 @@
 
 <body>
   <!-- NavBar to access user chats and serve as intro to our website -->
-  <nav class="navbar navbar-expand-lg bg-body-tertiary">
+  <nav class="navbar navbar-expand-lg">
     <div class="container-fluid">
       <a class="navbar-brand d-flex align-items-center" href="#">
         <img src="images/project_logo.png" alt="Logo" width="80" height="74" class="me-2">
@@ -44,12 +44,12 @@
   <!-- This <div> will host the posts that are made and also serve as the search results area -->
   <div class="container text-center mb-5">
     <h1 style="margin-bottom: 45px">Recent AI Posts from our Users</h1>
-    <div class="row" id="web-content">
+    <div class="row g-3" id="web-content">
     </div>
   </div>
   <!-- Footer for spacing and "copyright" stuff -->
   <footer class="container-fluid">
-    <div class="container text-center">
+    <div class="container text-center pt-5">
     <p style="color: white"> &copy; ASE_AI_220</p>
     </div>
   </footer>
@@ -74,7 +74,7 @@
 
       for (let i = 0; i < posts.length; i++) {
         let postCol = document.createElement("div");
-        postCol.classList.add("col-4");
+        postCol.classList.add("col-12", "col-m-6", "col-lg-4");
 
         let postCard = document.createElement("div");
         postCard.classList.add("card");
@@ -86,7 +86,7 @@
 
         let cardTitle = document.createElement("h5");
         cardTitle.classList.add("card-title");
-        cardTitle.innerText = posts[i].conversation["title"];
+        cardTitle.innerText = posts[i].post["title"];
         cardData.appendChild(cardTitle);
 
         let cardAuthor = document.createElement("h6");
@@ -94,11 +94,11 @@
         cardData.appendChild(cardAuthor);
 
         let cardText = document.createElement("p");
-        cardText.innerText = posts[i].conversation["summary"];
+        cardText.innerText = posts[i].post["summary"];
         cardData.appendChild(cardText);
 
         let cardLink = document.createElement("a");
-        cardLink.setAttribute('href', 'detail.html');
+        cardLink.setAttribute('href', 'detail.html'); // make this link to the JSONBlob that is uploaded once Joey fixes the post feature.
         cardLink.classList.add("card-link");
         cardLink.innerText = 'Check out this Conversation';
         cardData.appendChild(cardLink);
@@ -115,5 +115,4 @@
 
   </script>
 </body>
-
 </html>
