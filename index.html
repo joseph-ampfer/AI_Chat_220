@@ -78,7 +78,7 @@
 
         let postCard = document.createElement("div");
         postCard.classList.add("card");
-        postCard.style.width = "20rem";
+        postCard.style.width = "100%";
         postCard.style.margin = "auto";
 
         let cardData = document.createElement("div");
@@ -98,7 +98,9 @@
         cardData.appendChild(cardText);
 
         let cardLink = document.createElement("a");
-        cardLink.setAttribute('href', 'chats.html'); // make this link to the JSONBlob that is uploaded once Joey fixes the post feature.
+        cardLink.setAttribute('href', '#'); // make this link to the JSONBlob that is uploaded once Joey fixes the post feature.
+        cardLink.dataset.index = i;
+        cardLink.addEventListener('click', ()=> redirectAndLoadChat(i));
         cardLink.classList.add("card-link");
         cardLink.innerText = 'Check out this Conversation';
         cardData.appendChild(cardLink);
@@ -112,6 +114,14 @@
     }
 
     loadPosts();
+
+    function redirectAndLoadChat(i) {
+      const chat = posts[i].chat;
+      console.log(chat);
+      sessionStorage.setItem('selectedPublicChat', JSON.stringify(chat));
+
+      window.location.href = 'chat.html';
+    }
 
   </script>
 </body>

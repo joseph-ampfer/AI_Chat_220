@@ -50,6 +50,16 @@
       pre {
         border-radius: 0.75rem;
       }
+      .user-message {
+        margin-left: auto;
+        width: fit-content;
+        max-width: 60%;
+        white-space: pre-wrap;
+        padding: 1rem;
+        border-radius: 1rem;
+        color: white;
+        font-weight: 500;
+      }
     </style>
   </head>
   <body>
@@ -76,7 +86,7 @@
           <!-- Navigation Bar -->
           <nav class="navbar navbar-expand-lg navbar-light bg-light">
             <div class="container-fluid">
-              <a class="navbar-brand" href="#">AI Chatbot</a>
+              <a class="navbar-brand" href="index.html">Chat 220</a>
               <button
                 class="navbar-toggler"
                 type="button"
@@ -123,15 +133,16 @@
           <div class="chat-input">
             <form id="chatForm" class="d-flex">
               <!-- Text input -->
-              <input
+              <textarea
                 type="text"
                 class="form-control me-2"
                 id="userMessage"
                 placeholder="Type your message..."
                 autocomplete="off"
-              />
+                style="resize: none; height: 3rem;"
+              ></textarea>
               <!-- Audio recording button  -->
-              <button id="toggle-recording" class="btn btn btn-primary me-2" type="button" onclick="toggleRecording()">
+              <button id="toggle-recording" class="btn btn btn-primary me-2" style="height: 3rem;" type="button" onclick="toggleRecording()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-mic" viewBox="0 0 16 16">
                   <path d="M3.5 6.5A.5.5 0 0 1 4 7v1a4 4 0 0 0 8 0V7a.5.5 0 0 1 1 0v1a5 5 0 0 1-4.5 4.975V15h3a.5.5 0 0 1 0 1h-7a.5.5 0 0 1 0-1h3v-2.025A5 5 0 0 1 3 8V7a.5.5 0 0 1 .5-.5"/>
                   <path d="M10 8a2 2 0 1 1-4 0V3a2 2 0 1 1 4 0zM8 0a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V3a3 3 0 0 0-3-3"/>
@@ -139,7 +150,7 @@
               </button>
               <!-- Image upload -->
               <input type="file" id="imageUpload" accept="image/*" class="form-control me-2 d-none"/>
-              <button class="btn btn-primary" type="submit">Send</button>
+              <button class="btn btn-primary" style="height: 3rem;" type="submit">Send</button>
             </form>
           </div>
         </main>
@@ -178,6 +189,7 @@
       let model = modelBtn.innerText.trim();
       let uploadedImageBase64 = null;
       let modelTracking = {};
+      let selectedPublicChat = {};
 
       const textModelsHTML = `
         <li><a class="dropdown-item" href="#" >qwen-2.5-coder-32b</a></li>
@@ -270,6 +282,10 @@
         currentChatIndex = -1;
         // Remove selected chat highlight
         document.querySelector('.selectedChat')?.classList.remove('selectedChat');
+        // Make dropdown and model correct
+        modelBtn.innerText = 'gemma2-9b-it';
+        modelDropdown.innerHTML = textModelsHTML;
+        model = 'gemma2-9b-it';
       }
       // Attach to new chat button
       document.querySelector('#new-chat-btn').addEventListener('click', ()=> newChat());
@@ -325,8 +341,7 @@
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('mb-3');
         if (isUser) {
-          messageDiv.classList.add('text-end');
-          messageDiv.innerHTML = `<span class="badge bg-primary">${message}</span>`;
+          messageDiv.innerHTML = `<div class="bg-primary  user-message" >${message}</div>`;
         } else {
           messageDiv.innerHTML = marked.parse(message);
           
@@ -473,6 +488,55 @@
         document.querySelector(`[data-index="${currentChatIndex}"]`).classList.add('selectedChat');
       }
 
+      function loadChatByChat(chat) {
+        chatMessages.innerHTML = '';
+        selectedPublicChat = chat;
+        const selectedChat = chat;
+
+        if (selectedChat && selectedChat.conversation) {
+
+          // Check if image generator chat, change model select
+          if (selectedChat.isImageChat) {
+            modelBtn.innerText = 'Image';
+            modelDropdown.innerHTML = '';
+            model = "image";
+          } else {
+            modelBtn.innerText = 'gemma2-9b-it';
+            modelDropdown.innerHTML = textModelsHTML;
+            model = 'gemma2-9b-it';
+          }
+
+          conversation = selectedChat.conversation;
+          modelTracking = selectedChat.modelTracking || {}; // Ensure modelTracking is an object
+
+           // Display chat history with append message
+          for (let i = 0; i < conversation.length; i++) {
+            // If content is an array, assume image formatting and display the image
+            if (Array.isArray(conversation[i].content)) {
+              if (conversation[i].content.length > 1) {
+                if (conversation[i].role == 'user') {
+                  displayImagePreview(conversation[i].content[1]?.image_url.url);
+                } else {
+                  displayGeneratedImage(conversation[i].content[1]?.image_url.url);
+                }
+
+              } 
+              appendMessage(conversation[i].content[0].text);
+            } else {
+              appendMessage(conversation[i].content, conversation[i].role == 'user', modelTracking[i]);
+            }
+          }
+          currentChatIndex = -2;
+          hljs.highlightAll();
+          console.log('Loaded chat by chat:', currentChatIndex);
+          console.log(conversation);
+        }
+        // Remove selected chat from session storage
+        sessionStorage.removeItem('selectedPublicChat');
+        // document.querySelector('.selectedChat')?.classList.remove('selectedChat');
+        // document.querySelector(`[data-index="${currentChatIndex}"]`).classList.add('selectedChat');
+      }
+
       // Load conversation history from jsonBlob
       async function loadChat() {
         try {
@@ -482,8 +546,15 @@
             blobData.chats = [];
           }
 
+          // If a chat to view is in session storage, display it.
+          let publicChatConvo = sessionStorage.getItem('selectedPublicChat');
+          console.log(publicChatConvo);
+          if (publicChatConvo) {
+            loadChatByChat(JSON.parse(publicChatConvo));
+          }
+
           // Load chat history (titles) into the aside
-          loadSideBar();
+          await loadSideBar();
 
           // Optionally load the first chat automatically:
           //newChat();
@@ -518,6 +589,21 @@
             let li = document.createElement('li');
             li.classList.add('list-group-item', 'selectedChat');
             li.innerText = title;
+            let newIndex = currentChatIndex;
+            li.dataset.index = newIndex;
+            li.addEventListener('click', () => loadChatByIndex(newIndex));
+            document.querySelector('#chatHistory').prepend(li);
+          } else if (currentChatIndex == -2) { // Loaded message from index page
+            // Save public chat to end of your chats
+            blobData.chats.push(selectedPublicChat);
+
+            // Set current index to the new chat
+            currentChatIndex = blobData.chats.length - 1;
+            
+            // Add to sidebar
+            let li = document.createElement('li');
+            li.classList.add('list-group-item', 'selectedChat');
+            li.innerText = selectedPublicChat.title;
             let newIndex = currentChatIndex;
             li.dataset.index = newIndex;
             li.addEventListener('click', () => loadChatByIndex(newIndex));
@@ -860,7 +946,7 @@
           let newPostData = {
             username: "Jooo",
             chat_summary: parsed.chat_summary,
-            conversation: conversation
+            chat: blobData.chats[currentChatIndex]
           };
 
           let publicBlob = await fetchJSON(publicPostsURL);
