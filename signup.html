@@ -118,6 +118,8 @@
                     let newUserBlob = putRes.headers.get('Location');
                     let correctedURL = newUserBlob.replace("http","https");
                     console.log(correctedURL);
+                    let smallUsername = newEmail.substring(0, newEmail.indexOf("@"));
+                    localStorage.setItem("username", smallUsername);
                     localStorage.setItem("MyBlobURL", correctedURL);
                     //console.log(putRes.headers.get('Location'));
                     users.push({"email":newEmail,"password":newPassword,"blobURL":newUserBlob});

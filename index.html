@@ -270,6 +270,10 @@
         currentChatIndex = -1;
         // Remove selected chat highlight
         document.querySelector('.selectedChat')?.classList.remove('selectedChat');
+        // ,ade drp[dpwm amd ,pde; cprrect
+        modelBtn.innerText = 'gemma2-9b-it';
+        modelDropdown.innerHTML = textModelsHTML;
+        model = 'gemma2-9b-it';
       }
       // Attach to new chat button
       document.querySelector('#new-chat-btn').addEventListener('click', ()=> newChat());
@@ -858,7 +862,7 @@
           const parsed = JSON.parse(botMessage);
 
           let newPostData = {
-            username: "Jooo",
+            username: localStorage.getItem("username"),
             chat_summary: parsed.chat_summary,
             conversation: conversation
           };

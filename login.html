@@ -88,6 +88,8 @@
                </div>`;
             }
             else {
+              let smallUsername = userEmail.substring(0, userEmail.indexOf("@"));
+              localStorage.setItem("username", smallUsername);
               localStorage.setItem("MyBlobURL", userBlob);
               window.location.href = 'index.html';
             }
