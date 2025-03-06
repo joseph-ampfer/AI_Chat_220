@@ -23,6 +23,8 @@
   position: fixed;
   width: 100%;
   background-color: #f5f5f5;
+  z-index: 1000;
+  box-shadow: 0px -12px 24px 5px blue;
 }
 
 .section1 {

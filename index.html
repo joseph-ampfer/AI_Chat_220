@@ -86,7 +86,7 @@
 
         let cardTitle = document.createElement("h5");
         cardTitle.classList.add("card-title");
-        cardTitle.innerText = posts[i].post["title"];
+        cardTitle.innerText = posts[i].chat_summary["title"];
         cardData.appendChild(cardTitle);
 
         let cardAuthor = document.createElement("h6");
@@ -94,11 +94,11 @@
         cardData.appendChild(cardAuthor);
 
         let cardText = document.createElement("p");
-        cardText.innerText = posts[i].post["summary"];
+        cardText.innerText = posts[i].chat_summary["summary"];
         cardData.appendChild(cardText);
 
         let cardLink = document.createElement("a");
-        cardLink.setAttribute('href', 'detail.html'); // make this link to the JSONBlob that is uploaded once Joey fixes the post feature.
+        cardLink.setAttribute('href', 'chats.html'); // make this link to the JSONBlob that is uploaded once Joey fixes the post feature.
         cardLink.classList.add("card-link");
         cardLink.innerText = 'Check out this Conversation';
         cardData.appendChild(cardLink);
