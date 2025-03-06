@@ -17,14 +17,14 @@
             <form class="p-4 border rounded shadow bg-white">
                 <div class="mb-3">
                   <label for="exampleInputEmail1" class="form-label">Email address</label>
-                  <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp">
+                  <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" required>
                   <div id="emailHelp" class="form-text">We'll never share your email with anyone else.</div>
                 </div>
                 <div class="mb-3">
                   <label for="exampleInputPassword1" class="form-label">Password</label>
                   <input type="password" class="form-control" id="exampleInputPassword1">
                 </div>
-                <button type="button" class="btn btn-primary" id="submit">Sign Up</button>
+                <button type="submit" class="btn btn-primary" id="submit">Sign Up</button>
                 
               </form>
               <div class = "mt-3" id="liveAlertPlaceholder"></div>
@@ -48,9 +48,11 @@
             }
             
 
-            document.querySelector("#submit").addEventListener("click",async function() {
+            document.querySelector("#submit").addEventListener("click",async function(event) {
+                event.preventDefault();
                 let isUsernameAvailable = true;
-                let newEmail = document.querySelector('#exampleInputEmail1').value.trim();
+                let emailInput = document.querySelector('#exampleInputEmail1');
+                let newEmail = emailInput.value.trim();
                 let newPassword = document.querySelector('#exampleInputPassword1').value.trim();
                 let alert = document.querySelector('#liveAlertPlaceholder');
 
@@ -65,6 +67,25 @@
                         return;
                     }
 
+                if (!emailInput.checkValidity()) {
+                        alert.innerHTML = 
+                        `<div class="alert alert-danger alert-dismissible" role="alert">
+                           <div>Please enter a valid email address</div>
+                           <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>`;
+                        return;
+                    }
+                
+                if (newPassword.length < 7 || !/\d/.test(newPassword)) {
+                        alert.innerHTML = 
+                        `<div class="alert alert-danger alert-dismissible" role="alert">
+                           <div>Password must be 7 character or more and have a number</div>
+                           <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>`;
+                        isUsernameAvailable = false;
+                        return;
+                }
+                
                 let users = await getEmails();
                 for (let user of users) {
                     if (newEmail == user.email) {
@@ -120,7 +141,8 @@
                         return;
                     }
 
-                    window.location.href = 'index.html';
+                    //window.location.href = 'index.html'; //This is used to test going back and forth.
+                    window.location.replace('index.html');
                 }
             });
 
