@@ -17,13 +17,15 @@
       }
       /* Sidebar chat history */
       .chat-history {
-        height: calc(100vh - 56px); /* Adjust based on navbar height */
+        /* height: calc(100vh - 56px); Adjust based on navbar height */
+        height: 100dvh;
         overflow-y: auto;
         border-right: 1px solid #dee2e6;
       }
       /* Main chat area layout */
       .chat-area {
-        height: calc(100vh - 56px);
+        /* height: calc(100vh - 56px); Adjust based on navbar height */
+        height: 100dvh;
         display: flex;
         flex-direction: column;
       }
@@ -51,40 +53,7 @@
     </style>
   </head>
   <body>
-    <!-- Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-      <div class="container-fluid">
-        <a class="navbar-brand" href="#">AI Chatbot</a>
-        <button
-          class="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarContent"
-          aria-controls="navbarContent"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-        >
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarContent">
-          <!-- Additional nav items can be added here -->
-          <ul class="navbar-nav">
-            <li class="nav-item dropdown">
-              <button id="modelSelect-btn" class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                gemma2-9b-it
-              </button>
-              <ul id="modelSelect" class="dropdown-menu ">
-                <li><a class="dropdown-item" >qwen-2.5-coder-32b</a></li>
-                <li><a class="dropdown-item" >llama-3.3-70b-versatile</a></li>
-                <li><a class="dropdown-item" >deepseek-r1-distill-qwen-32b</a></li>
-                <li><a class="dropdown-item" >gemma2-9b-it</a></li>
-                <li><a class="dropdown-item" >llama-3.2-90b-vision-preview</a></li>
-              </ul>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </nav>
+
 
     <!-- Main Content Area -->
     <div class="container-fluid">
@@ -93,9 +62,10 @@
         <aside class="col-md-3 chat-history bg-light">
           <div class="p-3">
             <button id="new-chat-btn" class="btn btn-primary mb-3">New Chat</button>
+            <button id="img-220-btn" class="btn btn-primary mb-3">Image 220</button>
             <h5>Chat History</h5>
             <ul id="chatHistory" class="list-group">
-              <li class="list-group-item">Conversation 1</li>
+              <!-- <li class="list-group-item">Conversation 1</li> -->
               <!-- More conversation items -->
             </ul>
           </div>
@@ -103,14 +73,53 @@
 
         <!-- Main Chat Interface -->
         <main class="col-md-9 chat-area">
-          <div class="chat-messages d-flex flex-column flex-fill text-break" id="chatMessages">
-            <!-- Chat messages will appear here -->
-            
-            <div class="flex-grow-1 d-flex align-items-center justify-content-center text-center" role="alert">
-              <h2 class="">Hello! How can I assist you today?</h2>
+          <!-- Navigation Bar -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+              <a class="navbar-brand" href="#">AI Chatbot</a>
+              <button
+                class="navbar-toggler"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#navbarContent"
+                aria-controls="navbarContent"
+                aria-expanded="false"
+                aria-label="Toggle navigation"
+              >
+                <span class="navbar-toggler-icon"></span>
+              </button>
+              <div class="collapse navbar-collapse" id="navbarContent">
+                <!-- Additional nav items can be added here -->
+                <ul class="navbar-nav me-auto">
+                  <li class="nav-item dropdown">
+                    <button id="modelSelect-btn" class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                      gemma2-9b-it
+                    </button>
+                    <ul id="modelSelect" class="dropdown-menu ">
+                      <li><a class="dropdown-item" href="#" >qwen-2.5-coder-32b</a></li>
+                      <li><a class="dropdown-item" href="#" >llama-3.3-70b-versatile</a></li>
+                      <li><a class="dropdown-item" href="#" >deepseek-r1-distill-qwen-32b</a></li>
+                      <li><a class="dropdown-item" href="#" >gemma2-9b-it</a></li>
+                      <li><a class="dropdown-item" href="#" >llama-3.2-90b-vision-preview</a></li>
+                    </ul>
+                  </li>
+                </ul>
+
+                <!-- post button -->
+                 <button id="postChat" class="btn btn-outline-success" type="submit">Post</button>
+              </div>
             </div>
-            
-          </div>
+          </nav>
+          <section class="chat-messages d-flex flex-column flex-fill text-break" >
+            <div class="container-sm h-100" id="chatMessages">
+              <!-- Chat messages will appear here -->
+              
+              <div class="d-flex align-items-center justify-content-center text-center h-100" role="status">
+                <h2 class="">Hello! How can I assist you today?</h2>
+              </div>
+
+            </div>
+          </section>
           <div class="chat-input">
             <form id="chatForm" class="d-flex">
               <!-- Text input -->
@@ -170,6 +179,13 @@
       let uploadedImageBase64 = null;
       let modelTracking = {};
 
+      const textModelsHTML = `
+        <li><a class="dropdown-item" href="#" >qwen-2.5-coder-32b</a></li>
+        <li><a class="dropdown-item" href="#" >llama-3.3-70b-versatile</a></li>
+        <li><a class="dropdown-item" href="#" >deepseek-r1-distill-qwen-32b</a></li>
+        <li><a class="dropdown-item" href="#" >gemma2-9b-it</a></li>
+        <li><a class="dropdown-item" href="#" >llama-3.2-90b-vision-preview</a></li>`;
+
       // Handle Image Upload
       // Global variable to keep track of the last file name
       let lastFileName = "";
@@ -221,6 +237,14 @@
         chatMessages.appendChild(imgDiv);
       }
 
+      // Display generated image
+      function displayGeneratedImage(imageBase64) {
+        const imgDiv = document.createElement("div");
+        imgDiv.classList.add('mb-3', 'mx-auto');
+        imgDiv.innerHTML = `<img src="${imageBase64}" class="img-fluid" style="max-width: 400px;">`;
+        chatMessages.appendChild(imgDiv);
+      }
+
       // Model select
       document.querySelectorAll('#modelSelect li a').forEach(e => {
         e.addEventListener('click', function() {
@@ -237,7 +261,7 @@
       // New chat function
       function newChat() {
         // Clear screen
-        chatMessages.innerHTML = `<div class="flex-grow-1 d-flex align-items-center justify-content-center text-center" role="alert">
+        chatMessages.innerHTML = `<div class="d-flex align-items-center justify-content-center text-center h-100" role="status">
               <h2 class="">Hello! How can I assist you today?</h2>
             </div>`;
         // Clear local conversation
@@ -251,6 +275,25 @@
       document.querySelector('#new-chat-btn').addEventListener('click', ()=> newChat());
 
 
+      // New image generation chat function
+      function newImageChat() {
+        // Clear screen
+        chatMessages.innerHTML = `<div class="d-flex align-items-center justify-content-center text-center h-100" role="status">
+              <h2 class="">Turning text into reality.</h2>
+            </div>`;
+        // Clear local conversation
+        conversation = [];
+        // Set current index to a temporary value indicating "new unsaved chat"
+        currentChatIndex = -1;
+        // Remove selected chat highlight
+        document.querySelector('.selectedChat')?.classList.remove('selectedChat');
+        modelBtn.innerText = 'Image';
+        modelDropdown.innerHTML = '';
+        model = "image";
+      }
+      document.querySelector('#img-220-btn').addEventListener('click', ()=> newImageChat());
+
+
 
       // Helper: Fetch JSON from URL
       async function fetchJSON(url) {
@@ -261,8 +304,8 @@
 
 
       // Helper: Update JSON Blob
-      async function updateJSONBlob(data) {
-        const response = await fetch(JSON_BLOB_URL, {
+      async function updateJSONBlob(url, data) {
+        const response = await fetch(url, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -308,15 +351,79 @@
 
       // Load chats for side bar
       async function loadSideBar() {
-        blobData.chats.forEach((chat, index) => {
-          let title = chat.title;
-          let li = document.createElement('li');
-          li.classList.add('list-group-item');
-          li.innerText = title;
-          li.dataset.index = index;
-          li.addEventListener('click', () => loadChatByIndex(index));
-          document.querySelector('#chatHistory').prepend(li);
-        }); 
+        const chatHistory = document.querySelector('#chatHistory');
+
+        // Group the chats, get result
+        const groupedChats = groupChatsByDate(blobData.chats);
+
+        // Order in which we want to display groups
+        const sections = ["Today", "Yesterday", "Previous 7 Days", "Older"];
+
+        // Go through each section, using section as a key for grouped chats
+        sections.forEach(section => {
+          if (groupedChats[section].length > 0) {
+            // Create header label
+            let header = document.createElement('li');
+            header.classList.add('list-group-item', 'fw-bold', 'bg-light');
+            header.innerText = section;
+            chatHistory.appendChild(header);
+
+            // Append chats under the corresponding header // Going backwards to assume higher index is more recent
+            for (let i = groupedChats[section].length-1; i>=0; i--) {
+              let title = groupedChats[section][i].chat.title;
+              let li = document.createElement('li');
+              li.classList.add('list-group-item');
+              li.innerText = title;
+              li.dataset.index = groupedChats[section][i].index;
+              li.addEventListener('click', () => loadChatByIndex(groupedChats[section][i].index));
+              chatHistory.appendChild(li);
+            }
+          }
+        });
+
+        // blobData.chats.forEach((chat, index) => {
+        //   let title = chat.title;
+        //   let li = document.createElement('li');
+        //   li.classList.add('list-group-item');
+        //   li.innerText = title;
+        //   li.dataset.index = index;
+        //   li.addEventListener('click', () => loadChatByIndex(index));
+        //   chatHistory.prepend(li);
+        // }); 
+      }
+
+      // Grouping chats by date to get to load sidebar
+      function groupChatsByDate(chats) {
+        const today = new Date();
+        const todayStart = new Date(today.setHours(0,0,0,0)).getTime();
+        const yesterdayStart = todayStart - 86400000; // 1 day before start
+        const weekStart = todayStart - 7 * 86400000; // 7 days before start
+
+        const grouped = {
+          "Today": [],
+          "Yesterday": [],
+          "Previous 7 Days": [],
+          "Older": []
+        };
+
+        chats.forEach((chat, index) => {
+          const chatTime = new Date(chat.timestamp).getTime() || 0;
+
+          let group;
+          if (chatTime >= todayStart) {
+              group = "Today";
+          } else if (chatTime >= yesterdayStart) {
+              group = "Yesterday";
+          } else if (chatTime >= weekStart) {
+              group = "Previous 7 Days";
+          } else {
+              group = "Older";
+          }
+
+          grouped[group].push({ chat, index }); // Keep the original index
+        });
+
+        return grouped;
       }
 
 
@@ -325,6 +432,18 @@
         const selectedChat = blobData.chats[index];
 
         if (selectedChat && selectedChat.conversation) {
+
+          // Check if image generator chat, change model select
+          if (selectedChat.isImageChat) {
+            modelBtn.innerText = 'Image';
+            modelDropdown.innerHTML = '';
+            model = "image";
+          } else {
+            modelBtn.innerText = 'gemma2-9b-it';
+            modelDropdown.innerHTML = textModelsHTML;
+            model = 'gemma2-9b-it';
+          }
+
           conversation = selectedChat.conversation;
           modelTracking = selectedChat.modelTracking || {}; // Ensure modelTracking is an object
 
@@ -332,7 +451,14 @@
           for (let i = 0; i < conversation.length; i++) {
             // If content is an array, assume image formatting and display the image
             if (Array.isArray(conversation[i].content)) {
-              conversation[i].content.length > 1 && displayImagePreview(conversation[i].content[1]?.image_url.url);
+              if (conversation[i].content.length > 1) {
+                if (conversation[i].role == 'user') {
+                  displayImagePreview(conversation[i].content[1]?.image_url.url);
+                } else {
+                  displayGeneratedImage(conversation[i].content[1]?.image_url.url);
+                }
+
+              } 
               appendMessage(conversation[i].content[0].text);
             } else {
               appendMessage(conversation[i].content, conversation[i].role == 'user', modelTracking[i]);
@@ -379,8 +505,10 @@
             // add to blobData
             blobData.chats.push({
               'title': title,
+              'timestamp': '',
               'modelTracking': {},
-              'conversation': []
+              'conversation': [],
+              'isImageChat': false
             });
 
             // Set current index to the new chat
@@ -418,46 +546,41 @@
           // Add message to conversation
           conversation.push({ role: 'user', content: messageContent });
 
-          // Fetch ai response
-          const response = await fetch(groqEndpoint, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${GROQ_API_KEY}`
-            },
-            body: JSON.stringify({ messages: conversation, model: currentModel}),
-          });
+          if (model == 'image') {
+            await generateImage(message);
+          } else {
 
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Error ${response.status}: ${errorText}`);
+            // Send request to ai api
+            const response = await fetch(groqEndpoint, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${GROQ_API_KEY}`
+              },
+              body: JSON.stringify({ messages: conversation, model: currentModel}),
+            });
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              throw new Error(`Error ${response.status}: ${errorText}`);
+            }
+
+            const resJson = await response.json();
+            const botMessage = resJson.choices?.[0]?.message?.content ?? "No response.";
+            appendMessage(botMessage, false, currentModel); // Display bot response
+            hljs.highlightAll(); // Highlight code
+
+            // Update conversation
+            conversation.push({ role: "assistant", content: botMessage });
+
+            // Update modelTracking
+            modelTracking[conversation.length-1] = currentModel; 
+            
+            // Update local blob and send to jsonBlob
+            await updateChatBlob();
           }
 
-          const resJson = await response.json();
-          const botMessage = resJson.choices?.[0]?.message?.content ?? "No response.";
-          appendMessage(botMessage, false, currentModel); // Display bot response
-          hljs.highlightAll(); // Highlight code
-
-
-          // // Decided to not storing image in jsonblob, only text
-          // if (conversation[conversation.length-1].content[0].type) {
-          //   conversation[conversation.length-1].content = conversation[conversation.length-1].content[0].text;
-          // }
-
-          // Update conversation
-          conversation.push({ role: "assistant", content: botMessage });
-
-          // Update modelTracking
-          modelTracking[conversation.length-1] = currentModel; 
-
-          // Update the blob data with the new conversation
-          blobData.chats[currentChatIndex].conversation = conversation;
-
-          // Update the blob data with the new model tracking
-          blobData.chats[currentChatIndex].modelTracking = modelTracking;
-
-          // Update conversation in JSON blob
-          await updateJSONBlob(blobData);
+          
         } catch (error) {
           console.error("Request failed:", error);
           appendMessage("🚫 Oops! Something went wrong. Please try again.", false);
@@ -612,48 +735,150 @@
         isRecording = !isRecording;
       }
 
+      // Helper function to convert a blob to a Base64 string
+      function blobToBase64(blob) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onerror = reject;
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+      }
+
+      // image generator
+      async function generateImage(message, imageModel = '') {
+
+        // Display placehoder the image in an <img> tag
+        const placeholder = document.createElement('div');
+        placeholder.classList.add("bg-secondary", 'rounded', 'd-flex', 'align-items-center', 'justify-content-center');
+        placeholder.style.width = '400px';
+        placeholder.style.height = '400px';
+        placeholder.style.margin = '';
+        placeholder.innerHTML = `
+          <div class="spinner-border text-light " role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>`;
+
+        chatMessages.appendChild(placeholder);
+
+
+        const response = await fetch(`https://midterm.jampfer.workers.dev/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({prompt: message}),
+          }
+        );
+
+        if (!response.ok) {
+          placeholder.remove();
+          throw new Error("Error fetching image:", response.statusText);
+        }
+
+        // Convert the binary response to a blob
+        const blob = await response.blob();
+
+        // Create an object URL for the image
+        const imageUrl = URL.createObjectURL(blob);
+
+        // Display the image in an <img> tag
+        const img = document.createElement('img');
+        img.classList.add('img-fluid');
+        img.src = imageUrl;
+        img.alt = "Generate AI image";
+        placeholder.innerHTML = '';
+        placeholder.appendChild(img);
+
+        // Convert the blob to a Base64 string
+        const base64data = await blobToBase64(blob);
+
+        // Keeping same format i had before of user uploaded images
+        let messageContent = [ {type:'text', text: ''}, {type: 'image_url', image_url: { url: base64data }} ];
+        
+        // Update conversation
+        conversation.push({ role: "assistant", content: messageContent });
+
+        // Update modelTracking
+        modelTracking[conversation.length-1] = model; 
+        
+        // Update local blob and send to jsonBlob
+        await updateChatBlob(true);
+      }
+
+      async function updateChatBlob(isImageChat = false) {
+        const timestamp = Date.now();
+        blobData.chats[currentChatIndex].conversation = conversation;
+        blobData.chats[currentChatIndex].modelTracking = modelTracking;
+        blobData.chats[currentChatIndex].timestamp = timestamp;
+        blobData.chats[currentChatIndex].isImageChat = isImageChat;
+        await updateJSONBlob(JSON_BLOB_URL ,blobData);
+      }
+
+      //generateImage("@cf/stabilityai/stable-diffusion-xl-base-1.0");
+
+      // Post a chat function!!!!
+      const publicPostsURL = 'https://jsonblob.com/api/jsonBlob/1346491622271148032';
+      document.querySelector('#postChat').addEventListener('click', async function() {
+        if (!conversation) {
+          appendMessage("No conversation to post", false);
+          return;
+        }
+
+        try {
+          let systemPrompt = {
+            "role": "system",
+            "content": `You an assistant that summarizes chats in JSON like they would appear in reddit. A title that is a question, and a detail that is a 30 word summary. The JSON schema should include
+              {
+                "chat_summary": {
+                  "title": "string (as a question)",
+                  "summary": "string (about 30 words)"
+                }
+              }`
+          };
+
+          // Make new convo with system prompt at the beginning
+          let convoWithSystemPrompt = [systemPrompt, ...conversation];
+
+          // Send request to ai api
+          const response = await fetch(groqEndpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${GROQ_API_KEY}`
+            },
+            body: JSON.stringify({ messages: convoWithSystemPrompt, model: model, response_format: {"type": "json_object"}}),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Error ${response.status}: ${errorText}`);
+          }
+
+          const resJson = await response.json();
+          const botMessage = resJson.choices?.[0]?.message?.content ?? "No response.";
+          const parsed = JSON.parse(botMessage);
+
+          let newPostData = {
+            username: "Jooo",
+            chat_summary: parsed.chat_summary,
+            conversation: conversation
+          };
+
+          let publicBlob = await fetchJSON(publicPostsURL);
+          console.log(publicBlob);
+          publicBlob.push(newPostData);
+
+          await updateJSONBlob(publicPostsURL, publicBlob);
+
+          alert('Posted :)')
+         
+        } catch(error) {
+          console.error("Request failed:", error);
+          alert("Problem posting, please try again.");
+        }
+      });
  
      
     </script>
   </body>
 </html>
 
-  <!-- // // Axios request
-  // try {
-  //   // Send post request to Groq using Axios
-  //   const { data } = await axios.post(
-  //     endpoint,
-  //     {
-  //       messages: conversation,
-  //       model: 'gemma2-9b-it'
-  //     },
-  //     {
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         Authorization: `Bearer ${GROQ_API_KEY}`
-  //       }
-  //     }
-  //   );
-
-  //   // Get chat message content
-  //   let botResponse = data.choices[0].message?.content;
-  //   //botResponse = marked.parse(botResponse);
-
-  //   // Create and append the message div
-  //   const aiMessageDiv = document.createElement("div");
-  //   aiMessageDiv.classList.add("mb-3");
-  //   aiMessageDiv.innerHTML = botResponse;
-  //   chatMessages.appendChild(aiMessageDiv);
-
-  //   // Scroll to bottom and add to history
-  //   chatMessages.scrollTop = chatMessages.scrollHeight;
-  //   conversation.push({ role: "assistant", content: botResponse });
-  // } catch (error) {
-  //   console.error("API request failed:", error);
-
-  //   // Optional: Show error message in the UI
-  //   const errorDiv = document.createElement("div");
-  //   errorDiv.classList.add("mb-3", "text-red-500");
-  //   errorDiv.textContent = "Oops! Something went wrong. Please try again.";
-  //   chatMessages.appendChild(errorDiv);
-  // } -->
