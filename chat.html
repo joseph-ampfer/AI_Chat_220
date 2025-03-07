@@ -9,6 +9,7 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
       /* Full-height layout */
       body {
@@ -55,10 +56,46 @@
         width: fit-content;
         max-width: 60%;
         white-space: pre-wrap;
-        padding: 1rem;
+        padding: 0.25rem 1rem;
         border-radius: 1rem;
         color: white;
         font-weight: 500;
+      }
+      .three-dots-btn {
+        background: none;
+        border: none;
+        border-radius: 10px;
+        display: none;
+        height: 100%;
+        color: rgba(0, 0, 0, 0.525);
+      }
+      .list-group-item[data-index]:hover .three-dots-btn {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .three-dots-btn:hover {
+        color: black;
+      }
+      .chat-options {
+        display: none; 
+        position: absolute; 
+        top: 100%; 
+        right: 0; 
+        background: #fff; 
+        border: 1px solid #ccc; 
+        border-radius: 1rem;
+        padding: 0.5rem;
+        z-index: 10;
+      }
+      .chat-options.show {
+        display: block;
+      }
+      .rename-chat:hover {
+        background-color: rgba(0, 0, 0, 0.08);
+      }
+      .delete-chat:hover {
+        background-color: rgba(0, 0, 0, 0.08);
       }
     </style>
   </head>
@@ -75,7 +112,30 @@
             <button id="img-220-btn" class="btn btn-primary mb-3">Image 220</button>
             <h5>Chat History</h5>
             <ul id="chatHistory" class="list-group">
-              <!-- <li class="list-group-item">Conversation 1</li> -->
+              <!-- === MOCK HISTORY ITEM ==== -->
+              <!-- <li data-index="-2" class="list-group-item d-flex justify-content-between">
+                Conversation 1
+                <!-- Wrapper with relative positioning
+                <div class="chat-options-wrapper" style="position: relative;">
+                  <button class="three-dots-btn">
+                    <!-- Three dots icon SVG 
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots" viewBox="0 0 16 16">
+                      <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3"/>
+                    </svg>
+                  </button>
+                    <!-- Popup with options 
+                  <div class="chat-options" >
+                    <button class="rename-chat btn d-flex justify-content-between ">
+                      <i class="bi bi-pencil me-3"></i>
+                      <span>Rename</span>
+                    </button>
+                    <button class="delete-chat text-danger btn">
+                      <i class="bi bi-trash3 me-3"></i>
+                      <span>Delete</span>
+                    </button>
+                  </div>
+                </div>
+              </li> -->
               <!-- More conversation items -->
             </ul>
           </div>
@@ -130,7 +190,7 @@
 
             </div>
           </section>
-          <div class="chat-input">
+          <div class="chat-input container-sm">
             <form id="chatForm" class="d-flex">
               <!-- Text input -->
               <textarea
@@ -174,7 +234,8 @@
 
       // Constants
       const JSON_BLOB_URL = 'https://jsonblob.com/api/jsonBlob/1344049234386804736';
-      const groqEndpoint = 'https://api.groq.com/openai/v1/chat/completions';
+      const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
+      const PUBLIC_POSTS_URL = 'https://jsonblob.com/api/jsonBlob/1346491622271148032';
       const chatMessages = document.getElementById('chatMessages');
       const chatForm = document.getElementById('chatForm');
       const messageInput = document.getElementById('userMessage');
@@ -319,7 +380,7 @@
       }
 
 
-      // Helper: Update JSON Blob
+      // Helper: Update JSON Blob with blobData directly
       async function updateJSONBlob(url, data) {
         const response = await fetch(url, {
           method: 'PUT',
@@ -341,7 +402,7 @@
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('mb-3');
         if (isUser) {
-          messageDiv.innerHTML = `<div class="bg-primary  user-message" >${message}</div>`;
+          messageDiv.innerHTML = `<div class="bg-primary user-message" >${message}</div>`;
         } else {
           messageDiv.innerHTML = marked.parse(message);
           
@@ -383,29 +444,86 @@
             header.innerText = section;
             chatHistory.appendChild(header);
 
-            // Append chats under the corresponding header // Going backwards to assume higher index is more recent
-            for (let i = groupedChats[section].length-1; i>=0; i--) {
+            // Append chats under the corresponding header
+            // Going backwards to assume higher index is more recent
+            for (let i = groupedChats[section].length - 1; i >= 0; i--) {
               let title = groupedChats[section][i].chat.title;
               let li = document.createElement('li');
-              li.classList.add('list-group-item');
-              li.innerText = title;
+              li.classList.add('list-group-item', 'd-flex', 'justify-content-between');
               li.dataset.index = groupedChats[section][i].index;
+              
+              // Create a span to hold the chat title
+              let titleSpan = document.createElement('span');
+              titleSpan.innerText = title;
+              li.appendChild(titleSpan);
+              
+              // When clicking the li (outside of the options), load the chat.
               li.addEventListener('click', () => loadChatByIndex(groupedChats[section][i].index));
+              
+              let chatOptionsWrapper = document.createElement('div');
+              chatOptionsWrapper.classList.add('chat-options-wrapper');
+              li.appendChild(chatOptionsWrapper);
+
+              let threeDotsBtn = document.createElement('button');
+              threeDotsBtn.classList.add('three-dots-btn');
+              threeDotsBtn.innerHTML = `<i class="bi bi-three-dots"></i>`;
+              chatOptionsWrapper.appendChild(threeDotsBtn);
+
+              let chatOptions = document.createElement('div');
+              chatOptions.classList.add('chat-options');
+              chatOptionsWrapper.appendChild(chatOptions);
+              let renameChatBtn = document.createElement('button');
+              renameChatBtn.classList.add('rename-chat', 'btn', 'd-flex', 'justify-content-between', 'text-end');
+              renameChatBtn.innerHTML = `<i class="bi bi-pencil me-3"></i><span>Rename</span>`;
+              chatOptions.appendChild(renameChatBtn);
+              let deleteChatBtn = document.createElement('button');
+              deleteChatBtn.classList.add('delete-chat', 'text-danger', 'btn', 'text-end');
+              deleteChatBtn.innerHTML = `<i class="bi bi-trash3 me-3"></i><span>Delete</span>`;
+              chatOptions.appendChild(deleteChatBtn);
+
+              // Three dots button toggles the popup
+              threeDotsBtn.addEventListener('click', function(event) {
+                event.stopPropagation();
+                chatOptions.classList.toggle('show');
+              });
+
+              // Delete button event listener
+              deleteChatBtn.addEventListener('click', function(event) {
+                event.stopPropagation();
+                li.remove();
+                deleteChatbyIndex(groupedChats[section][i].index);
+              });
+
+              // Rename button event listener
+              renameChatBtn.addEventListener('click', function(event) {
+                event.stopPropagation();
+                chatOptions.classList.remove('show'); // Hide popup
+
+                // Prompt user for new chat title. You can also create an inline input instead.
+                const newTitle = prompt("Enter new chat title:", titleSpan.innerText);
+                if (newTitle !== null && newTitle.trim() !== "") {
+                  titleSpan.innerText = newTitle;
+                  // Optionally update your groupedChats data structure or send to your backend
+                  blobData.chats[groupedChats[section][i].index].title = newTitle;
+                  updateJSONBlob(JSON_BLOB_URL, blobData);
+                }
+              });
+
               chatHistory.appendChild(li);
             }
           }
         });
-
-        // blobData.chats.forEach((chat, index) => {
-        //   let title = chat.title;
-        //   let li = document.createElement('li');
-        //   li.classList.add('list-group-item');
-        //   li.innerText = title;
-        //   li.dataset.index = index;
-        //   li.addEventListener('click', () => loadChatByIndex(index));
-        //   chatHistory.prepend(li);
-        // }); 
       }
+      // Close the options popup when clicking outside
+      document.addEventListener('click', function(event) {
+        document.querySelectorAll('.chat-options.show').forEach(popup => {
+          // The parent of the chatOptions is the wrapper that contains both the button and the options.
+          // If the click target isn't within that wrapper, hide the popup.
+          if (!popup.parentElement.contains(event.target)) {
+            popup.classList.remove('show');
+          }
+        });
+      });
 
       // Grouping chats by date to get to load sidebar
       function groupChatsByDate(chats) {
@@ -637,7 +755,7 @@
           } else {
 
             // Send request to ai api
-            const response = await fetch(groqEndpoint, {
+            const response = await fetch(GROQ_ENDPOINT, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -890,23 +1008,28 @@
         await updateChatBlob(true);
       }
 
+      // Adds metadata to blob and then updates jsonBlob
       async function updateChatBlob(isImageChat = false) {
         const timestamp = Date.now();
         blobData.chats[currentChatIndex].conversation = conversation;
         blobData.chats[currentChatIndex].modelTracking = modelTracking;
         blobData.chats[currentChatIndex].timestamp = timestamp;
         blobData.chats[currentChatIndex].isImageChat = isImageChat;
-        await updateJSONBlob(JSON_BLOB_URL ,blobData);
+        await updateJSONBlob(JSON_BLOB_URL, blobData);
       }
 
       //generateImage("@cf/stabilityai/stable-diffusion-xl-base-1.0");
 
-      // Post a chat function!!!!
-      const publicPostsURL = 'https://jsonblob.com/api/jsonBlob/1346491622271148032';
+      // Post a chat function!!!! postChat
       document.querySelector('#postChat').addEventListener('click', async function() {
-        if (!conversation) {
-          appendMessage("No conversation to post", false);
+        if (conversation.length <= 0) {
+          alert("No conversation to post", false);
           return;
+        }
+
+        if (blobData.chats[currentChatIndex].isImageChat) {
+          alert("Cannot post image chats", false);
+          return;   
         }
 
         try {
@@ -925,7 +1048,7 @@
           let convoWithSystemPrompt = [systemPrompt, ...conversation];
 
           // Send request to ai api
-          const response = await fetch(groqEndpoint, {
+          const response = await fetch(GROQ_ENDPOINT, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -949,11 +1072,11 @@
             chat: blobData.chats[currentChatIndex]
           };
 
-          let publicBlob = await fetchJSON(publicPostsURL);
+          let publicBlob = await fetchJSON(PUBLIC_POSTS_URL);
           console.log(publicBlob);
           publicBlob.push(newPostData);
 
-          await updateJSONBlob(publicPostsURL, publicBlob);
+          await updateJSONBlob(PUBLIC_POSTS_URL, publicBlob);
 
           alert('Posted :)')
          
@@ -962,6 +1085,14 @@
           alert("Problem posting, please try again.");
         }
       });
+
+      // Deleting chats
+      async function deleteChatbyIndex(index) {
+        // Splice out indexed chat
+        blobData.chats.splice(index, 1);
+        // Send to jsonblob
+        updateJSONBlob(JSON_BLOB_URL, blobData);
+      }
  
      
     </script>
