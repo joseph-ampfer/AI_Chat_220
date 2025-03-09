@@ -13,7 +13,7 @@
     <style>
       /* Full-height layout */
       body {
-        height: 100vh;
+        height: 100dvh;
         overflow: hidden;
       }
       /* Sidebar chat history */
@@ -21,8 +21,29 @@
         /* height: calc(100vh - 56px); Adjust based on navbar height */
         height: 100dvh;
         overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-gutter: stable;
+        scrollbar-color: lightgrey rgb(248, 249, 250);
+        /* scrollbar-gutter: stable; */
         border-right: 1px solid #dee2e6;
       }
+      .sidebar-toggle-btn {
+        width: fit-content;
+      }
+      #nav-sidebar-toggle:hover {
+        background-color: #d3d4d5;
+      }
+      /* Hide the main toggle button when the aside is transitioning */
+      /* #aside.collapsing ~ main nav .sidebar-toggle, */
+      #aside.show ~ main nav .sidebar-toggle-btn {
+        display: none;
+      }
+
+      /* Optionally, show it when aside is collapsed */
+      #aside:not(.show) ~ main nav .sidebar-toggle-btn {
+        display: inline-block;
+      }
+
       /* Main chat area layout */
       .chat-area {
         /* height: calc(100vh - 56px); Adjust based on navbar height */
@@ -41,6 +62,11 @@
       }
       .list-group-item[data-index] {
         cursor: pointer;
+        background-color: transparent;
+        border-radius: 7px;
+      }
+      .list-group-item {
+        border: none;
       }
       .list-group-item[data-index]:hover {
         background-color: rgb(219, 220, 255);
@@ -97,6 +123,21 @@
       .delete-chat:hover {
         background-color: rgba(0, 0, 0, 0.08);
       }
+      .btn.btn-light:hover {
+        background-color: rgb(219, 220, 255);
+      }
+      #chatForm .form-control {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      .chat-messages pre,
+      .chat-messages code {
+        max-width: 80vw;
+        overflow-x: auto;
+      }
+   
+
+
     </style>
   </head>
   <body>
@@ -104,15 +145,30 @@
 
     <!-- Main Content Area -->
     <div class="container-fluid">
-      <div class="row">
+      <div class="d-flex">
         <!-- Aside: Chat History -->
-        <aside class="col-md-3 chat-history bg-light">
-          <div class="p-3">
-            <button id="new-chat-btn" class="btn btn-primary mb-3">New Chat</button>
-            <button id="img-220-btn" class="btn btn-primary mb-3">Image 220</button>
-            <h5>Chat History</h5>
+        <aside class=" chat-history bg-light collapse collapse-horizontal md-show" id="aside" style="flex-shrink: 0;">
+          <div class="p-3" style="text-wrap: nowrap; width: 260px; ">
+            <div class="d-flex flex-column">
+              <button class="btn btn-light sidebar-toggle-btn mb-3" title="Close sidebar" type="button" data-bs-toggle="collapse" data-bs-target="#aside" aria-expanded="false" aria-controls="aside">
+                <i class="bi bi-layout-sidebar fw-bold"></i>
+              </button>
+              <button id="new-chat-btn" class="btn btn-light mb-3 d-flex">
+                <div class=" me-3">
+                  <img class="object-fit-fill rounded-circle" width="25px" height="25px" alt="Icon"  src="./images/project_logo.png"  />
+                </div>
+                New Chat
+              </button>
+              <button id="img-220-btn" class="btn btn-light mb-3 d-flex align-items-center">
+                <div class=" me-3">
+                  <img class="object-fit-fill rounded-circle" width="25px" height="25px" alt="Icon"  src="https://chatgpt.com/backend-api/content?id=file-SxYQO0Fq1ZkPagkFtg67DRVb&gizmo_id=g-2fkFE8rbu&ts=483666&p=gpp&sig=b8e22a3821359e471d0553815ac9de1e55f0c091cfe490d1b7ebe07df32c7a8e&v=0">
+                </div>
+                Image 220
+              </button>
+            </div>
+            <!-- <h5>Chat History</h5> -->
             <ul id="chatHistory" class="list-group">
-              <!-- === MOCK HISTORY ITEM ==== -->
+              <!-- === MOCK HISTORY ITEM (all loaded in) ==== -->
               <!-- <li data-index="-2" class="list-group-item d-flex justify-content-between">
                 Conversation 1
                 <!-- Wrapper with relative positioning
@@ -142,10 +198,13 @@
         </aside>
 
         <!-- Main Chat Interface -->
-        <main class="col-md-9 chat-area">
+        <main class="chat-area" style="flex-grow: 1;">
           <!-- Navigation Bar -->
-          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+          <nav class="navbar navbar-expand-lg navbar-light ">
             <div class="container-fluid">
+              <button id="nav-sidebar-toggle" class="btn sidebar-toggle-btn me-3" title="Open sidebar" type="button" data-bs-toggle="collapse" data-bs-target="#aside" aria-expanded="false" aria-controls="aside">
+                <i class="bi bi-layout-sidebar fw-bold"></i>
+              </button>
               <a class="navbar-brand" href="index.html">Chat 220</a>
               <button
                 class="navbar-toggler"
@@ -180,6 +239,7 @@
               </div>
             </div>
           </nav>
+
           <section class="chat-messages d-flex flex-column flex-fill text-break" >
             <div class="container-sm h-100" id="chatMessages">
               <!-- Chat messages will appear here -->
@@ -190,7 +250,7 @@
 
             </div>
           </section>
-          <div class="chat-input container-sm">
+          <div class="chat-input " style="max-width: 100%;">
             <form id="chatForm" class="d-flex">
               <!-- Text input -->
               <textarea
