@@ -36,9 +36,9 @@
   </nav>
   <!-- Search Bar section that will hover above a gif of the AI model in action -->
   <div class="container-fluid mb-5" id="searcharea">
-    <form class="d-flex" role="search" id="searchbar">
-      <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-      <button class="btn btn-success" type="submit">Search</button>
+    <form class="d-flex" role="search" id="searchbar" onsubmit="return false;">
+      <input class="form-control me-2" type="search" placeholder="Search our Chats" aria-label="Search" id="userSearch"
+        onkeyup="searchBar()">
     </form>
   </div>
   <!-- This <div> will host the posts that are made and also serve as the search results area -->
@@ -74,7 +74,7 @@
 
       for (let i = 0; i < posts.length; i++) {
         let postCol = document.createElement("div");
-        postCol.classList.add("col-12", "col-m-6", "col-lg-4");
+        postCol.classList.add("col", "col-12", "col-md-6", "col-lg-4");
 
         let postCard = document.createElement("div");
         postCard.classList.add("card");
@@ -112,6 +112,27 @@
     }
 
     loadPosts();
+
+    // This is close to working, have to make it so the items can move to the front of the list. Need to add animation for searchbar to scoll to search results.
+    function searchBar() {
+      let input, filter, col, card, cardData, cardTitle, i; // Variables to get the search input, filter the input, select the cards that are being searched by title, and an iteration variable.
+      input = document.getElementById("userSearch");
+      filter = input.value.toLowerCase();
+      col = document.getElementsByClassName("col");
+      card = document.getElementsByClassName("card");
+
+      for (i = 0; i < card.length; i++) {
+        cardData = card[i].getElementsByClassName("card-body")[0];
+        cardTitle = cardData.getElementsByClassName("card-title")[0];
+        let title = cardTitle.textContent || cardTitle.innerText;
+        if (title.toLowerCase().indexOf(filter) > -1) {
+          card[i].style.display = "";
+        } else {
+          card[i].style.display = "none";
+
+        }
+      }
+    }
 
   </script>
 </body>
