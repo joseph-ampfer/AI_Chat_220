@@ -59,7 +59,7 @@
   <script>
     const JSON_BLOB_URL = "https://jsonblob.com/api/jsonBlob/1346491622271148032";
     const divRow = document.getElementById("web-content");
-    let posts = [];
+    let posts = []; // array that will be used to store the JSONBlob data when called and will be used to display posts.
 
     async function fetchJSON(url) {
       const response = await fetch(url);
@@ -67,17 +67,19 @@
       return response.json();
     }
 
+    /* Function to load all of the posts to the page */
     async function loadPosts() {
       posts = await fetchJSON(JSON_BLOB_URL);
       displayPosts(posts);
     }
 
+    /* This function displays all posts in an ordered way using bootstrap cards. */
     function displayPosts(filteredPosts) {
       divRow.innerHTML = "";
 
       filteredPosts.forEach(post => {
         let postCol = document.createElement("div");
-        postCol.classList.add("col", "col-12", "col-md-6", "col-lg-4");
+        postCol.classList.add("col-12", "col-md-6", "col-lg-4");
 
         let postCard = document.createElement("div");
         postCard.classList.add("card");
@@ -112,35 +114,37 @@
       });
     }
 
+    /* This function handles the cases of the user using the search bar to find posts on the website. */
     function searchBar() {
-      let input = document.getElementById("userSearch").value.toLowerCase();
-      let searchBar = document.getElementById("searchbar");
-      let resultsContainer = document.getElementById("web-content");
-      let sectionHeader = document.getElementById("sectionHeader");
+      let input = document.getElementById("userSearch").value.toLowerCase(); // search input that is then turned lowercase to filter.
+      let searchBar = document.getElementById("searchbar"); // grabbing the searchbar for animations
+      let resultsContainer = document.getElementById("web-content"); // section of the document that will show the results.
+      let sectionHeader = document.getElementById("sectionHeader"); // header of the results section that will change based on use of search bar.
 
       let filteredPosts = posts.filter(post =>
-        post.chat_summary["title"].toLowerCase().includes(input)
+        post.chat_summary["title"].toLowerCase().includes(input) // variable that will filter the titles of each of the posts that include what is in the input. Uses the array filter method
       );
 
-      displayPosts(filteredPosts);
+      displayPosts(filteredPosts); // load all of the posts using the filtered posts.
 
-      
-      if (input === "") {
+      /* These sets of conditionals deal with the animations based on user interaction with the searchbar. */      
+      if (input === "") {  // If there is no input in the search bar, the search bar moves back to its original location and the header is changed back to show all recent posts.
         searchBar.style.marginTop = "0px";
         window.scrollTo({ top: 0, behavior: "smooth" });
         sectionHeader.innerText = "Recent AI Posts from our Users";
-      } else if (filteredPosts.length > 0) {
+      } else if (filteredPosts.length > 0) { // If there are search results, move the search bar and scroll screen to search results and change the header to 'Search Results'.
         searchBar.style.transition = "all 0.5s ease-in-out";
         searchBar.style.marginTop = "1000px";
         resultsContainer.scrollIntoView({ behavior: "smooth", block: "start" });
         sectionHeader.innerText = "Search Results";
-      } else {
+      } else { // If there are no results, move search bar back to original position and scroll the screen to show the 'results not found' message.
         searchBar.style.marginTop = "0px";
         sectionHeader.innerText = "Results not found :(";
+        resultsContainer.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
 
-    loadPosts();
+    loadPosts(); // Load posts for users to see.
 
   </script>
 </body>
