@@ -78,7 +78,7 @@ function searchBar() {
     sectionHeader.innerText = "Recent AI Posts from our Users";
   } else if (filteredPosts.length > 0) { // If there are search results, move the search bar and scroll screen to search results and change the header to 'Search Results'.
     searchBar.style.transition = "all 0.5s ease-in-out";
-    searchBar.style.marginTop = "1000px";
+    searchBar.style.marginTop = "800px";
     resultsContainer.scrollIntoView({ behavior: "smooth", block: "start" });
     sectionHeader.innerText = "Search Results";
   } else { // If there are no results, move search bar back to original position and scroll the screen to show the 'results not found' message.
