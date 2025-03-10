@@ -43,7 +43,7 @@
   </div>
   <!-- This <div> will host the posts that are made and also serve as the search results area -->
   <div class="container text-center mb-5">
-    <h1 style="margin-bottom: 45px">Recent AI Posts from our Users</h1>
+    <h1 style="margin-bottom: 45px" id="sectionHeader">Recent AI Posts from our Users</h1>
     <div class="row g-3" id="web-content">
     </div>
   </div>
@@ -120,6 +120,10 @@
       filter = input.value.toLowerCase();
       col = document.getElementsByClassName("col");
       card = document.getElementsByClassName("card");
+      let searchBar = document.getElementById("searchbar");
+      let resultsContainer = document.getElementById("web-content");
+      let sectionHeader = document.getElementById("sectionHeader");
+      let resultsFound = false;
 
       for (i = 0; i < card.length; i++) {
         cardData = card[i].getElementsByClassName("card-body")[0];
@@ -127,10 +131,29 @@
         let title = cardTitle.textContent || cardTitle.innerText;
         if (title.toLowerCase().indexOf(filter) > -1) {
           card[i].style.display = "";
+          resultsFound = true;
         } else {
           card[i].style.display = "none";
 
         }
+      }
+
+      if (filter === "") {
+        searchBar.style.marginTop = "0px"; 
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        sectionHeader.innerText = "Recent AI Posts from our Users";
+        return;
+      }
+
+      if (resultsFound) {
+        searchBar.style.transition = "all 0.5s ease-in-out";
+        searchBar.style.marginTop = "1000px";
+        resultsContainer.scrollIntoView({ behavior: "smooth", block: "start" });
+        sectionHeader.innerText = "Search Results";
+      } else {
+        searchBar.style.marginTop = "0px";
+        sectionHeader.innerText = "Results not found :(";
+
       }
     }
 

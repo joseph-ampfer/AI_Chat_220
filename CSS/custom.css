@@ -15,6 +15,8 @@
 #searchbar {
   width: 900px;
   height: 50px;
+  position:relative;
+  transition: all 0.5s ease-in-out;
 }
 
 input[type="search"]::placeholder {
