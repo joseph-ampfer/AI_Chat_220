@@ -1,14 +1,14 @@
 #searcharea {
-  background-image: url(../images/background.gif);
+  background-image: url(../images/chat-completion3.gif);
   background-size: cover; 
   background-repeat: no-repeat;
-  background-position: center;
+  background-position: center top;
   width: auto; 
   height: auto;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh; 
+  min-height: 100dvh; 
   
 }
 

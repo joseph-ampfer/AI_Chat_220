@@ -152,16 +152,16 @@ main.chat-area {
 
 
     <!-- Main Content Area -->
-    <div class="container-fluid">
+    <div class="" style="width: 100%;">
       <div class="d-flex">
         <!-- Aside: Chat History -->
         <aside class=" chat-history bg-light collapse collapse-horizontal md-show" id="aside" style="flex-shrink: 0;">
-          <div class="p-3" style="text-wrap: nowrap; width: 260px; ">
+          <div class="p-3" style="text-wrap: nowrap; width: 240px; ">
             <div class="d-flex flex-column">
               <button class="btn btn-light sidebar-toggle-btn mb-3" title="Close sidebar" type="button" data-bs-toggle="collapse" data-bs-target="#aside" aria-expanded="false" aria-controls="aside">
                 <i class="bi bi-layout-sidebar fw-bold"></i>
               </button>
-              <button id="new-chat-btn" class="btn btn-light mb-3 d-flex">
+              <button id="new-chat-btn" class="btn btn-dark mb-3 d-flex">
                 <div class=" me-3">
                   <img class="object-fit-fill rounded-circle" width="25px" height="25px" alt="Icon"  src="./images/project_logo.png"  />
                 </div>
@@ -176,18 +176,18 @@ main.chat-area {
             </div>
             <!-- <h5>Chat History</h5> -->
             <ul id="chatHistory" class="list-group">
-              <!-- === MOCK HISTORY ITEM (all loaded in) ==== -->
+              <!-- === MOCK HISTORY ITEM (for reference) ==== -->
               <!-- <li data-index="-2" class="list-group-item d-flex justify-content-between">
                 Conversation 1
-                <!-- Wrapper with relative positioning
+                 Wrapper with relative positioning
                 <div class="chat-options-wrapper" style="position: relative;">
                   <button class="three-dots-btn">
-                    <!-- Three dots icon SVG 
+                     Three dots icon SVG 
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots" viewBox="0 0 16 16">
                       <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3"/>
                     </svg>
                   </button>
-                    <!-- Popup with options 
+                    Popup with options 
                   <div class="chat-options" >
                     <button class="rename-chat btn d-flex justify-content-between ">
                       <i class="bi bi-pencil me-3"></i>
@@ -201,6 +201,69 @@ main.chat-area {
                 </div>
               </li> -->
               <!-- More conversation items -->
+               <h5 class=" placeholder-glow">
+                <span class="placeholder col-6"></span>
+              </h5>
+              <p class=" placeholder-glow">
+                <span class="placeholder w-80" style="width: 94%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder " style="width: 87%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder w-86" style="width: 86%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder w-90" style="width: 90%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder" style="width: 83%;"></span>
+              </p>
+              <h5 class=" placeholder-glow">
+                <span class="placeholder col-6"></span>
+              </h5>
+              <p class=" placeholder-glow">
+                <span class="placeholder w-80" style="width: 94%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder " style="width: 89%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder w-86" style="width: 86%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder w-90" style="width: 90%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder" style="width: 82%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder" style="width: 88%;"></span>
+              </p>
+              <h5 class=" placeholder-glow">
+                <span class="placeholder col-6"></span>
+              </h5>
+              <p class=" placeholder-glow">
+                <span class="placeholder w-80" style="width: 84%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder " style="width: 96%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder w-86" style="width: 86%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder w-90" style="width: 90%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder " style="width: 79%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder" style="width: 84%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder" style="width: 89%;"></span>
+              </p>
             </ul>
           </div>
         </aside>
@@ -310,6 +373,12 @@ main.chat-area {
       const modelDropdown = document.querySelector('#modelSelect');
       const modelBtn = document.querySelector('#modelSelect-btn');
       const imageInput = document.getElementById("imageUpload");
+      const textModelsHTML = `
+        <li><a class="dropdown-item" href="#" >qwen-2.5-coder-32b</a></li>
+        <li><a class="dropdown-item" href="#" >llama-3.3-70b-versatile</a></li>
+        <li><a class="dropdown-item" href="#" >deepseek-r1-distill-qwen-32b</a></li>
+        <li><a class="dropdown-item" href="#" >gemma2-9b-it</a></li>
+        <li><a class="dropdown-item" href="#" >llama-3.2-90b-vision-preview</a></li>`;
 
       // Global Variables
       let conversation = [];
@@ -320,12 +389,19 @@ main.chat-area {
       let modelTracking = {};
       let selectedPublicChat = {};
 
-      const textModelsHTML = `
-        <li><a class="dropdown-item" href="#" >qwen-2.5-coder-32b</a></li>
-        <li><a class="dropdown-item" href="#" >llama-3.3-70b-versatile</a></li>
-        <li><a class="dropdown-item" href="#" >deepseek-r1-distill-qwen-32b</a></li>
-        <li><a class="dropdown-item" href="#" >gemma2-9b-it</a></li>
-        <li><a class="dropdown-item" href="#" >llama-3.2-90b-vision-preview</a></li>`;
+
+
+      // If a chat to view is in session storage, display it.
+      // MOVED TO TOP FOR FASTER LOADING
+      let publicChatConvo = sessionStorage.getItem('selectedPublicChat');
+      console.log(publicChatConvo);
+      if (publicChatConvo) {
+        chatMessages.innerHTML = `<div class="spinner-border " role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>`;
+        loadChatByChat(JSON.parse(publicChatConvo));
+      }
+
 
       // Handle Image Upload
       // Global variable to keep track of the last file name
@@ -502,6 +578,9 @@ main.chat-area {
 
         // Order in which we want to display groups
         const sections = ["Today", "Yesterday", "Previous 7 Days", "Older"];
+
+        // Remove placeholder
+        chatHistory.innerHTML = '';
 
         // Go through each section, using section as a key for grouped chats
         sections.forEach(section => {
@@ -732,13 +811,6 @@ main.chat-area {
             blobData.chats = [];
           }
 
-          // If a chat to view is in session storage, display it.
-          let publicChatConvo = sessionStorage.getItem('selectedPublicChat');
-          console.log(publicChatConvo);
-          if (publicChatConvo) {
-            loadChatByChat(JSON.parse(publicChatConvo));
-          }
-
           // Load chat history (titles) into the aside
           await loadSideBar();
 
@@ -898,7 +970,19 @@ main.chat-area {
       }
 
 
-      // Handle form submission
+      // Handle enter press in textarea 
+      messageInput.addEventListener('keypress', function(event) {
+        if (event.key == 'Enter' && !event.shiftKey) {
+          event.preventDefault();
+          const message = messageInput.value.trim();
+          if (message) {
+            sendMessageToAI(message);
+            messageInput.value = ""; // Clear input
+          }
+        }
+      });
+
+      // Handle form submission (pressing submit, may change this later)
       chatForm.addEventListener("submit", (e) => {
         e.preventDefault();
         const message = messageInput.value.trim();
