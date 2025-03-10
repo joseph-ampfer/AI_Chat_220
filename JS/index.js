@@ -1,7 +1,13 @@
 const JSON_BLOB_URL = "https://jsonblob.com/api/jsonBlob/1346491622271148032";
 const divRow = document.getElementById("web-content");
-let posts = []; // array that will be used to store the JSONBlob data when called and will be used to display posts.
+let state = {
+  'querySet': [],
 
+  'page': 1,
+  'rows':9,
+
+}
+posts = []; // array that will be used to store the JSONBlob data when called and will be used to display posts.
 document.getElementById("userSearch").addEventListener("keyup", searchBar); // listen for user to use search bar and then run the searchBar function.
 
 /* Function to fetch the JSONBlob that holds the public posts and chats. */
@@ -11,10 +17,18 @@ async function fetchJSON(url) {
   return response.json();
 }
 
-/* Function to load all of the posts to the page */
-async function loadPosts() {
+/* Function to load all of the posts to the page. scrollDown is used for when a user clicks the next page. */
+async function loadPosts(scrollDown = false) {
   posts = await fetchJSON(JSON_BLOB_URL);
-  displayPosts(posts);
+
+  state.querySet = posts;
+  let data = pagination(state.querySet, state.page, state.rows);
+  displayPosts(data.querySet);
+  pageButtons(data.pages);
+
+  if (scrollDown) {
+    document.getElementById("web-content").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 }
 
 /* This function displays all posts in an ordered way using bootstrap cards. */
@@ -64,6 +78,7 @@ function searchBar() {
   let searchBar = document.getElementById("searchbar"); // grabbing the searchbar for animations
   let resultsContainer = document.getElementById("web-content"); // section of the document that will show the results.
   let sectionHeader = document.getElementById("sectionHeader"); // header of the results section that will change based on use of search bar.
+  let paginationWrapper = document.getElementById("pagination-wrapper"); // pagination wrapper section, will be hidden during searches.
 
   let filteredPosts = posts.filter(post =>
     post.chat_summary["title"].toLowerCase().includes(input) // variable that will filter the titles of each of the posts that include what is in the input. Uses the array filter method
@@ -76,16 +91,52 @@ function searchBar() {
     searchBar.style.marginTop = "0px";
     window.scrollTo({ top: 0, behavior: "smooth" });
     sectionHeader.innerText = "Recent AI Posts from our Users";
+    paginationWrapper.style.display = "block";
+    loadPosts();
   } else if (filteredPosts.length > 0) { // If there are search results, move the search bar and scroll screen to search results and change the header to 'Search Results'.
     searchBar.style.transition = "all 0.5s ease-in-out";
     searchBar.style.marginTop = "800px";
     resultsContainer.scrollIntoView({ behavior: "smooth", block: "start" });
     sectionHeader.innerText = "Search Results";
+    paginationWrapper.style.display = "none";
   } else { // If there are no results, move search bar back to original position and scroll the screen to show the 'results not found' message.
     searchBar.style.marginTop = "0px";
     sectionHeader.innerText = "No Results Found :(";
     resultsContainer.scrollIntoView({ behavior: "smooth", block: "start" });
+    paginationWrapper.style.display = "none";
   }
 }
 
-loadPosts(); // Load posts for users to see.
+
+function pagination(querySet, page, rows) {
+  let trimStart = (page - 1) * rows;
+  let trimEnd = trimStart + rows;
+
+  let trimmedData = querySet.slice(trimStart, trimEnd);
+
+  let pages = Math.ceil(querySet.length / rows);
+
+  return {
+    'querySet': trimmedData,
+    'pages': pages
+  }
+}
+
+function pageButtons(pages) {
+  let wrapper = document.getElementById('pagination-wrapper');
+  wrapper.innerHTML = '';
+
+  for (let page = 1; page <= pages; page++) {
+    wrapper.innerHTML += `<button value=${page} class="page btn btn-secondary">${page}</button>`;
+  }
+
+  $('.page').on('click', function () {
+    $('#web-content').empty();
+
+    state.page = $(this).val();
+
+    loadPosts(true);
+  })
+}
+
+loadPosts();
