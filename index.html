@@ -37,8 +37,7 @@
   <!-- Search Bar section that will hover above a gif of the AI model in action -->
   <div class="container-fluid mb-5" id="searcharea">
     <form class="d-flex" role="search" id="searchbar" onsubmit="return false;">
-      <input class="form-control me-2" type="search" placeholder="Search our Chats" aria-label="Search" id="userSearch"
-        onkeyup="searchBar()">
+      <input class="form-control me-2" type="search" placeholder="Search our Chats" aria-label="Search" id="userSearch">
     </form>
   </div>
   <!-- This <div> will host the posts that are made and also serve as the search results area -->
@@ -60,6 +59,8 @@
     const JSON_BLOB_URL = "https://jsonblob.com/api/jsonBlob/1346491622271148032";
     const divRow = document.getElementById("web-content");
     let posts = []; // array that will be used to store the JSONBlob data when called and will be used to display posts.
+    
+    document.getElementById("userSearch").addEventListener("keyup", searchBar); // Listen for user to use search bar and then run the searchBar function.
 
     async function fetchJSON(url) {
       const response = await fetch(url);
