@@ -19,4 +19,7 @@
 
 
 # Mobile demo
-![mobile demo](./assets/images/demo-mobile.gif)
+<div align="center">  
+  <img src="./assets/images/demo-mobile.gif" width="200" height="auto">
+</div>
+
