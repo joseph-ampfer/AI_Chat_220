@@ -84,9 +84,12 @@ function searchBar() {
   let sectionHeader = document.getElementById("sectionHeader"); // header of the results section that will change based on use of search bar.
   let paginationWrapper = document.getElementById("pagination-wrapper"); // pagination wrapper section, will be hidden during searches.
 
-  let filteredPosts = posts.filter(
-    (post) => post.chat_summary["title"].toLowerCase().includes(input) // variable that will filter the titles of each of the posts that include what is in the input. Uses the array filter method
-  );
+  let filteredPosts = posts.filter((post) => {
+    const title = post.chat_summary["title"].toLowerCase();
+    const shortSummary = post.chat_summary.summary.toLowerCase();
+    // variable that will filter the titles of each of the posts that include what is in the input. Uses the array filter method
+    return title.includes(input) || shortSummary.includes(input);
+  });
 
   displayPosts(filteredPosts); // load all of the posts using the filtered posts.
 
