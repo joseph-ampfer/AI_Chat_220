@@ -311,7 +311,7 @@ main.chat-area {
             </div>
           </nav>
 
-          <section class="chat-messages d-flex flex-column flex-fill text-break" >
+          <section id="chat-section" class="chat-messages d-flex flex-column flex-fill text-break" >
             <div class="container-sm h-100" id="chatMessages">
               <!-- Chat messages will appear here -->
               
@@ -373,6 +373,7 @@ main.chat-area {
       const modelDropdown = document.querySelector('#modelSelect');
       const modelBtn = document.querySelector('#modelSelect-btn');
       const imageInput = document.getElementById("imageUpload");
+      const chatSection = document.getElementById('chat-section');
       const textModelsHTML = `
         <li><a class="dropdown-item" href="#" >qwen-2.5-coder-32b</a></li>
         <li><a class="dropdown-item" href="#" >llama-3.3-70b-versatile</a></li>
@@ -402,6 +403,11 @@ main.chat-area {
         loadChatByChat(JSON.parse(publicChatConvo));
       }
 
+      // Automatic scroll with response
+      const observer = new MutationObserver(() => {
+          chatSection.scrollTop = chatSection.scrollHeight;
+      });
+      observer.observe(chatSection, { childList: true, subtree: true });
 
       // Handle Image Upload
       // Global variable to keep track of the last file name
