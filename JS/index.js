@@ -178,6 +178,7 @@ function pageButtons(pages) {
 
 loadPosts(); // load the posts as soon as someone accesses the page
 
+/* This function creates the link to allow someone to view a public post. */
 function redirectAndLoadChat(i) {
   const chat = posts[i].chat;
   console.log(chat);
