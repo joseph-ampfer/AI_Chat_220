@@ -368,12 +368,13 @@ main.chat-area {
       const USERNAME = localStorage.getItem('username');
 
       if (!JSON_BLOB_URL || !USERNAME) {
-        window.location.replace('signup.html');
+        window.location.replace('login.html');
       }
 
       // Constants
       const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
       const PUBLIC_POSTS_URL = 'https://jsonblob.com/api/jsonBlob/1346491622271148032';
+      const chatHistory = document.querySelector('#chatHistory');
       const chatMessages = document.getElementById('chatMessages');
       const chatForm = document.getElementById('chatForm');
       const messageInput = document.getElementById('userMessage');
@@ -475,7 +476,7 @@ main.chat-area {
         chatMessages.appendChild(imgDiv);
       }
 
-      // Model select
+      // Model select functionality model-select modelDropdown
       document.querySelectorAll('#modelSelect li a').forEach(e => {
         e.addEventListener('click', function() {
           modelBtn.innerText = e.innerText;
@@ -504,6 +505,18 @@ main.chat-area {
         modelBtn.innerText = 'gemma2-9b-it';
         modelDropdown.innerHTML = textModelsHTML;
         model = 'gemma2-9b-it';
+        // Model select
+        document.querySelectorAll('#modelSelect li a').forEach(e => {
+          e.addEventListener('click', function() {
+            modelBtn.innerText = e.innerText;
+            model = e.innerText.trim();
+            if (model == 'llama-3.2-90b-vision-preview') {
+              imageInput.classList.remove('d-none');
+            } else {
+              imageInput.classList.add('d-none');
+            }
+          })
+        });
       }
       // Attach to new chat button
       document.querySelector('#new-chat-btn').addEventListener('click', ()=> newChat());
@@ -584,7 +597,6 @@ main.chat-area {
 
       // Load chats for side bar
       async function loadSideBar() {
-        const chatHistory = document.querySelector('#chatHistory');
 
         // Group the chats, get result
         const groupedChats = groupChatsByDate(blobData.chats);
@@ -834,6 +846,73 @@ main.chat-area {
         }
       }
 
+      function addToSidebar(title, index) {
+
+
+        //let title = groupedChats[section][i].chat.title;
+        let li = document.createElement('li');
+        li.classList.add('list-group-item', 'd-flex', 'justify-content-between');
+        li.dataset.index = index;
+        
+        // Create a span to hold the chat title
+        let titleSpan = document.createElement('span');
+        titleSpan.innerText = title;
+        li.appendChild(titleSpan);
+        
+        // When clicking the li (outside of the options), load the chat.
+        li.addEventListener('click', () => loadChatByIndex(index));
+        
+        let chatOptionsWrapper = document.createElement('div');
+        chatOptionsWrapper.classList.add('chat-options-wrapper');
+        li.appendChild(chatOptionsWrapper);
+
+        let threeDotsBtn = document.createElement('button');
+        threeDotsBtn.classList.add('three-dots-btn');
+        threeDotsBtn.innerHTML = `<i class="bi bi-three-dots"></i>`;
+        chatOptionsWrapper.appendChild(threeDotsBtn);
+
+        let chatOptions = document.createElement('div');
+        chatOptions.classList.add('chat-options');
+        chatOptionsWrapper.appendChild(chatOptions);
+        let renameChatBtn = document.createElement('button');
+        renameChatBtn.classList.add('rename-chat', 'btn', 'd-flex', 'justify-content-between', 'text-end');
+        renameChatBtn.innerHTML = `<i class="bi bi-pencil me-3"></i><span>Rename</span>`;
+        chatOptions.appendChild(renameChatBtn);
+        let deleteChatBtn = document.createElement('button');
+        deleteChatBtn.classList.add('delete-chat', 'text-danger', 'btn', 'text-end');
+        deleteChatBtn.innerHTML = `<i class="bi bi-trash3 me-3"></i><span>Delete</span>`;
+        chatOptions.appendChild(deleteChatBtn);
+
+        // Three dots button toggles the popup
+        threeDotsBtn.addEventListener('click', function(event) {
+          event.stopPropagation();
+          chatOptions.classList.toggle('show');
+        });
+
+        // Delete button event listener
+        deleteChatBtn.addEventListener('click', function(event) {
+          event.stopPropagation();
+          li.remove();
+          deleteChatbyIndex(index);
+        });
+
+        // Rename button event listener
+        renameChatBtn.addEventListener('click', function(event) {
+          event.stopPropagation();
+          chatOptions.classList.remove('show'); // Hide popup
+
+          // Prompt user for new chat title. You can also create an inline input instead.
+          const newTitle = prompt("Enter new chat title:", titleSpan.innerText);
+          if (newTitle !== null && newTitle.trim() !== "") {
+            titleSpan.innerText = newTitle;
+            // Optionally update your groupedChats data structure or send to your backend
+            blobData.chats[index].title = newTitle;
+            updateJSONBlob(JSON_BLOB_URL, blobData);
+          }
+        });
+
+        chatHistory.prepend(li);
+      }
 
       // Send user message and get bot response
       async function sendMessageToAI(message) {
@@ -857,13 +936,7 @@ main.chat-area {
             currentChatIndex = blobData.chats.length - 1;
             
             // Add to sidebar
-            let li = document.createElement('li');
-            li.classList.add('list-group-item', 'selectedChat');
-            li.innerText = title;
-            let newIndex = currentChatIndex;
-            li.dataset.index = newIndex;
-            li.addEventListener('click', () => loadChatByIndex(newIndex));
-            document.querySelector('#chatHistory').prepend(li);
+            addToSidebar(title, currentChatIndex);
           } else if (currentChatIndex == -2) { // Loaded message from index page
             // Save public chat to end of your chats
             blobData.chats.push(selectedPublicChat);

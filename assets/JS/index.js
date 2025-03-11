@@ -8,7 +8,7 @@ let state = {
   page: 1,
   rows: 9,
 };
-posts = []; // array that will be used to store the JSONBlob data when called and will be used to display posts.
+let posts = []; // array that will be used to store the JSONBlob data when called and will be used to display posts.
 document.getElementById("userSearch").addEventListener("keyup", searchBar); // listen for user to use search bar and then run the searchBar function.
 
 /* Function to fetch the JSONBlob that holds the public posts and chats. */
@@ -66,7 +66,7 @@ function displayPosts(filteredPosts) {
     let cardLink = document.createElement("a");
     cardLink.setAttribute("href", "#");
     cardLink.dataset.index = i;
-    cardLink.addEventListener("click", () => redirectAndLoadChat(i));
+    cardLink.addEventListener("click", () => redirectAndLoadChat(post.chat));
     cardLink.classList.add("card-link");
     cardLink.innerText = "Check out this Conversation";
     cardData.appendChild(cardLink);
@@ -199,8 +199,8 @@ function pageButtons(pages) {
 loadPosts(); // load the posts as soon as someone accesses the page
 
 /* This function creates the link to allow someone to view a public post. */
-function redirectAndLoadChat(i) {
-  const chat = posts[i].chat;
+function redirectAndLoadChat(chat) {
+  //const chat = posts[i].chat;
   console.log(chat);
   sessionStorage.setItem("selectedPublicChat", JSON.stringify(chat));
 
