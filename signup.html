@@ -139,7 +139,7 @@
             users.push({
               email: newEmail,
               password: newPassword,
-              blobURL: newUserBlob,
+              blobURL: correctedURL,
             });
             let response = await fetch(usersBlobApi, {
               method: "PUT",
