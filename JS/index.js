@@ -172,3 +172,11 @@ function pageButtons(pages) {
 }
 
 loadPosts(); // load the posts as soon as someone accesses the page
+
+function redirectAndLoadChat(i) {
+  const chat = posts[i].chat;
+  console.log(chat);
+  sessionStorage.setItem('selectedPublicChat', JSON.stringify(chat));
+
+  window.location.href = 'chat.html';
+}
