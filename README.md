@@ -11,3 +11,7 @@
 ***Joey Ampfer***
 - chat page
 - working with groq and other ai api's
+
+***Xander Murphy***
+- sign up/sign in pages
+- storage of users
