@@ -1,4 +1,4 @@
-const JSON_BLOB_URL = "https://jsonblob.com/api/jsonBlob/1346491622271148032"; // public link to the JSONBlob that stores our post data.
+const PUBLIC_BLOB_URL = "https://jsonblob.com/api/jsonBlob/1346491622271148032"; // public link to the JSONBlob that stores our post data.
 const divRow = document.getElementById("web-content"); // web content section. Used in multiple functions.
 const resultContainer = document.getElementById('result-container');
 let state = {
@@ -20,7 +20,7 @@ async function fetchJSON(url) {
 
 /* Function to load all of the posts to the page. scrollDown is used for when a user clicks the next page. */
 async function loadPosts(scrollDown = false) {
-  posts = await fetchJSON(JSON_BLOB_URL);
+  posts = await fetchJSON(PUBLIC_BLOB_URL);
 
   state.querySet = posts; // set the querySet to our set of posts from JSONBlob
   let data = pagination(state.querySet, state.page, state.rows); // create the pages through the use of the pagination function.

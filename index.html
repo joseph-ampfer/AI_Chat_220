@@ -77,6 +77,16 @@
       signup.innerHTML = `<a class="nav-link" href="signup.html">Signup</a>`;
 
       document.getElementById('navbarNav').appendChild(signup);
+    } else {
+      const logout = document.createElement('span');
+      logout.classList.add('nav-item', 'ms-auto');
+      logout.innerHTML = `<a class="nav-link" href="#">Logout</a>`;
+      logout.addEventListener('click', function() {
+        localStorage.clear();
+        location.reload();
+      })
+
+      document.getElementById('navbarNav').appendChild(logout);
     }
   </script>
   <script src="assets/JS/index.js"></script>

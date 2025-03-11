@@ -363,8 +363,15 @@ main.chat-area {
     <script src="./config/keys.js"></script>
     <script>
 
+      // Redirect if not logged in
+      const JSON_BLOB_URL = localStorage.getItem('MyBlobURL');
+      const USERNAME = localStorage.getItem('username');
+
+      if (!JSON_BLOB_URL || !USERNAME) {
+        window.location.replace('signup.html');
+      }
+
       // Constants
-      const JSON_BLOB_URL = 'https://jsonblob.com/api/jsonBlob/1344049234386804736';
       const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
       const PUBLIC_POSTS_URL = 'https://jsonblob.com/api/jsonBlob/1346491622271148032';
       const chatMessages = document.getElementById('chatMessages');
