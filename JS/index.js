@@ -4,7 +4,7 @@ let state = {
   'querySet': [],
 
   'page': 1,
-  'rows':9,
+  'rows': 9,
 
 }
 posts = []; // array that will be used to store the JSONBlob data when called and will be used to display posts.
@@ -126,17 +126,47 @@ function pageButtons(pages) {
   let wrapper = document.getElementById('pagination-wrapper');
   wrapper.innerHTML = '';
 
+  let prevButton = document.createElement("button");
+  prevButton.innerText = "Previous";
+  prevButton.classList.add("btn", "btn-secondary", "page-nav");
+  prevButton.disabled = state.page === 1;
+  prevButton.addEventListener("click", function () {
+    if (state.page > 1) {
+      state.page--;
+      loadPosts(true);
+    }
+  });
+  wrapper.appendChild(prevButton);
+
+
   for (let page = 1; page <= pages; page++) {
-    wrapper.innerHTML += `<button value=${page} class="page btn btn-secondary">${page}</button>`;
-  }
+    let button = document.createElement("button");
+    button.value = page;
+    button.classList.add("page", "btn", "btn-secondary");
+    button.innerText = page;
 
-  $('.page').on('click', function () {
-    $('#web-content').empty();
+    if (page === state.page) {
+      button.classList.add("active");
+    }
 
-    state.page = $(this).val();
+    button.addEventListener("click", function () {
+      state.page = parseInt(this.value);
+      loadPosts(true);
+    });
 
-    loadPosts(true);
-  })
+    wrapper.appendChild(button);
+  };
+
+  let nextButton = document.createElement("button");
+  nextButton.innerText = "Next";
+  nextButton.classList.add("btn", "btn-secondary", "page-nav");
+  nextButton.disabled = state.page === pages;
+  nextButton.addEventListener("click", function () {
+    if (state.page < pages) {
+      state.page++;
+      loadPosts(true);
+    }
+  });
+  wrapper.appendChild(nextButton);
 }
-
 loadPosts();
