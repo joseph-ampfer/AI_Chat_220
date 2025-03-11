@@ -35,7 +35,9 @@ async function loadPosts(scrollDown = false) {
 function displayPosts(filteredPosts) {
   divRow.innerHTML = ""; // clear the divRow to load the posts.
 
-  filteredPosts.forEach(post => {
+  for (let i = 0; i < filteredPosts.length; i++) {
+    let post = filteredPosts[i];
+
     let postCol = document.createElement("div");
     postCol.classList.add("col-12", "col-md-6", "col-lg-4");
 
@@ -61,16 +63,19 @@ function displayPosts(filteredPosts) {
     cardData.appendChild(cardText);
 
     let cardLink = document.createElement("a");
-    cardLink.setAttribute("href", "chats.html");
+    cardLink.setAttribute('href', '#');
+    cardLink.dataset.index = i;
+    cardLink.addEventListener('click', () => redirectAndLoadChat(i));
     cardLink.classList.add("card-link");
-    cardLink.innerText = "Check out this Conversation";
+    cardLink.innerText = 'Check out this Conversation';
     cardData.appendChild(cardLink);
 
     postCard.appendChild(cardData);
     postCol.appendChild(postCard);
     divRow.appendChild(postCol);
-  });
+  }
 }
+
 
 /* This function handles the cases of the user using the search bar to find posts on the website. */
 function searchBar() {
