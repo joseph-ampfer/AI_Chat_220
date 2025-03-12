@@ -6,6 +6,9 @@
 3. In `config/`, make `keys.js` file and write `const GROQ_API_KEY = "your-key"`
 4. Done!
 
+# Link to Youtube Project Presentation
+
+https://youtu.be/5kuKlZ_bMj4
 
 # Team and Contributions
 
@@ -17,6 +20,10 @@
 - sign up/sign in pages
 - storage of users
 
+***Landen Tomlin***
+- Index page formatting and style
+- Pagination and dynamically displaying posts
+- Search bar animation and functionality
 
 # Mobile demo
 <div align="center">  
