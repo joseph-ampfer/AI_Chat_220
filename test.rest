@@ -1,0 +1,28 @@
+### Create a new JSON Blob
+POST http://localhost:3030/api/jsonBlob
+Content-Type: application/json
+
+{
+  "name": "Example",
+  "type": "Test",
+  "active": true
+}
+
+### Get a JSON Blob by ID
+# Replace {blobId} with the actual blobId returned from the POST request
+GET http://localhost:3030/api/jsonBlob/{blobId}
+
+### Update an existing JSON Blob
+# Replace {blobId} with the actual blobId you want to update
+PUT http://localhost:3030/api/jsonBlob/{blobId}
+Content-Type: application/json
+
+{
+  "name": "Updated Example",
+  "type": "Updated Test",
+  "active": false
+}
+
+### Delete a JSON Blob
+# Replace {blobId} with the actual blobId you want to delete
+DELETE http://localhost:3030/api/jsonBlob/{blobId}
