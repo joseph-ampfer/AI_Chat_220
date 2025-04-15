@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const app = express();
 const { MongoClient, ServerApiVersion } = require('mongodb');
-const uri = "***REMOVED***";
+const uri = process.env.DATABASE_URI;
 
 
 // Middleware

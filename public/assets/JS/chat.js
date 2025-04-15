@@ -924,19 +924,6 @@ document
     }
 
     try {
-      let systemPrompt = {
-        role: "system",
-        content: `You an assistant that summarizes chats in JSON like they would appear in reddit. A title that is a question, and a detail that is a 30 word summary. The JSON schema should include
-              {
-                "chat_summary": {
-                  "title": "string (as a question)",
-                  "summary": "string (about 30 words)"
-                }
-              }`,
-      };
-
-      // Make new convo with system prompt at the beginning
-      let convoWithSystemPrompt = [systemPrompt, ...conversation];
 
       // Send request to ai api
       const response = await fetch('/api/summarize-chat', {
@@ -946,9 +933,8 @@ document
           Authorization: `Bearer <REPLACE-WITH-JWT>`,
         },
         body: JSON.stringify({
-          messages: convoWithSystemPrompt,
+          messages: conversation,
           model: 'gemma2-9b-it',
-          response_format: { type: "json_object" },
         }),
       });
 

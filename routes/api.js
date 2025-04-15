@@ -116,16 +116,30 @@ router.post('/transcriptions', upload.single('file'), async (req, res) => {
 router.post('/summarize-chat', async (req, res) => {
   const messages = req.body.messages;
   const model = req.body.model;
-  const response_format = req.body.response_format;
+
+  let systemPrompt = {
+    role: "system",
+    content: `You an assistant that summarizes chats in JSON like they would appear in reddit. A title that is a question, and a detail that is a 30 word summary. The JSON schema should include
+          {
+            "chat_summary": {
+              "title": "string (as a question)",
+              "summary": "string (about 30 words)"
+            }
+          }`,
+  };
+
+  // Make new convo with system prompt at the beginning
+  let convoWithSystemPrompt = [systemPrompt, ...messages];
 
   try {
     const completion = await groq.chat.completions.create({
-      messages: messages,
+      messages: convoWithSystemPrompt,
       model: model,
-      response_format: response_format
+      response_format: { type: "json_object" }
     });
       
     const summary = completion.choices?.[0]?.message?.content;
+    console.log(summary);
     res.json(summary);
 
   } catch (err) {
