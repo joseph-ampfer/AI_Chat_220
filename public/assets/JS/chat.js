@@ -118,17 +118,7 @@ function displayGeneratedImage(imageBase64) {
 }
 
 // Model select functionality model-select modelDropdown
-document.querySelectorAll("#modelSelect li a").forEach((e) => {
-  e.addEventListener("click", function () {
-    modelBtn.innerText = e.innerText;
-    model = e.innerText.trim();
-    if (model == "llama-3.2-90b-vision-preview") {
-      imageInput.classList.remove("d-none");
-    } else {
-      imageInput.classList.add("d-none");
-    }
-  });
-});
+attachModelDropdownListeners();
 
 // New chat function
 function newChat() {
@@ -147,17 +137,7 @@ function newChat() {
   modelDropdown.innerHTML = textModelsHTML;
   model = "gemma2-9b-it";
   // Model select
-  document.querySelectorAll("#modelSelect li a").forEach((e) => {
-    e.addEventListener("click", function () {
-      modelBtn.innerText = e.innerText;
-      model = e.innerText.trim();
-      if (model == "llama-3.2-90b-vision-preview") {
-        imageInput.classList.remove("d-none");
-      } else {
-        imageInput.classList.add("d-none");
-      }
-    });
-  });
+  attachModelDropdownListeners();
 }
 // Attach to new chat button
 document
@@ -398,6 +378,7 @@ function loadChatByIndex(index) {
     } else {
       modelBtn.innerText = "gemma2-9b-it";
       modelDropdown.innerHTML = textModelsHTML;
+      attachModelDropdownListeners();
       model = "gemma2-9b-it";
     }
 
@@ -647,11 +628,11 @@ async function sendMessageToAI(message) {
       await generateImage(message);
     } else {
       // Send request to ai api
-      const response = await fetch(GROQ_ENDPOINT, {
+      const response = await fetch("api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${GROQ_API_KEY}`,
+          Authorization: `Bearer <REPLACE-WITH-JWT>`,
         },
         body: JSON.stringify({ messages: conversation, model: currentModel }),
       });
@@ -661,9 +642,12 @@ async function sendMessageToAI(message) {
         throw new Error(`Error ${response.status}: ${errorText}`);
       }
 
-      const resJson = await response.json();
-      const botMessage =
-        resJson.choices?.[0]?.message?.content ?? "No response.";
+      const botMessage = await response.text() ?? "No response.";
+      //===old==
+      // const resJson = await response.json();
+      // const botMessage =
+      //   resJson.choices?.[0]?.message?.content ?? "No response.";
+      //====
       appendMessage(botMessage, false, currentModel); // Display bot response
       hljs.highlightAll(); // Highlight code
 
@@ -789,12 +773,11 @@ async function startRecording() {
       formData.append("response_format", "json");
       formData.append("language", "en");
 
-      const response = await fetch(
-        "https://api.groq.com/openai/v1/audio/transcriptions",
+      const response = await fetch('/api/transcriptions',
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${GROQ_API_KEY}`,
+            Authorization: `Bearer <REPLACE-WITH-JWT>`,
             // Let the browser set the correct Content-Type header for FormData.
           },
           body: formData,
@@ -956,15 +939,15 @@ document
       let convoWithSystemPrompt = [systemPrompt, ...conversation];
 
       // Send request to ai api
-      const response = await fetch(GROQ_ENDPOINT, {
+      const response = await fetch('/api/summarize-chat', {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${GROQ_API_KEY}`,
+          Authorization: `Bearer <REPLACE-WITH-JWT>`,
         },
         body: JSON.stringify({
           messages: convoWithSystemPrompt,
-          model: model,
+          model: 'gemma2-9b-it',
           response_format: { type: "json_object" },
         }),
       });
@@ -975,9 +958,10 @@ document
       }
 
       const resJson = await response.json();
-      const botMessage =
-        resJson.choices?.[0]?.message?.content ?? "No response.";
-      const parsed = JSON.parse(botMessage);
+      // console.log(resJson);
+      // const botMessage =
+      //   resJson.choices?.[0]?.message?.content ?? "No response.";
+      const parsed = JSON.parse(resJson);
 
       let newPostData = {
         username: USERNAME,
@@ -1004,4 +988,19 @@ async function deleteChatbyIndex(index) {
   blobData.chats.splice(index, 1);
   // Send to jsonblob
   updateJSONBlob(JSON_BLOB_URL, blobData);
+}
+
+// SELECTING A MODEL LISTENERS
+function attachModelDropdownListeners() {
+  document.querySelectorAll("#modelSelect li a").forEach((e) => {
+    e.addEventListener("click", function () {
+      modelBtn.innerText = e.innerText;
+      model = e.innerText.trim();
+      if (model === "llama-3.2-90b-vision-preview") {
+        imageInput.classList.remove("d-none");
+      } else {
+        imageInput.classList.add("d-none");
+      }
+    });
+  });
 }

@@ -1,7 +1,10 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const app = express();
+const { MongoClient, ServerApiVersion } = require('mongodb');
+const uri = "***REMOVED***";
 
 
 // Middleware
@@ -33,11 +36,33 @@ app.get('/:page', (req, res, next) => {
   }
 });
 
+// =================================
+
+// ======= DB Connection =======
+// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+const client = new MongoClient(uri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  }
+});
+
+const db = client.db('chat_220');
+
 
 /* ====== API ENDPOINTS ====== */
 // For defining routes in Routes folder, so we dont clog up this file
 const apiRoutes = require('./routes/api');
 app.use('/api', apiRoutes);
+
+app.get('/mongodb', async (req, res) => {
+  const cursor = db.collection('users').find();
+  const users = await cursor.toArray();
+  console.log(users);
+  res.json(users);
+  
+});
 
 /*Creating a JSON Blob is accomplished by sending a POST request to /api/jsonBlob. 
 	The body of the request should contain valid JSON that will used as the JSON Blob. 
@@ -45,15 +70,15 @@ app.use('/api', apiRoutes);
 	The Location header in the response will be set to the URL at which the blob can be accessed with a GET request. 
 	The body of the response is the JSON that was stored in the JSON blob. 
 */
-app.post('/api/jsonBlob', (req, res)=> {
+app.post('/api/jsonBlob', (req, res) => {
   let filename = (new Date()).toISOString().replace(/[^a-zA-Z0-9]/g, '');
-	let content=req.body;
-	fs.writeFileSync(`./blobs/${filename}.json`,JSON.stringify(content));
+  let content = req.body;
+  fs.writeFileSync(`./blobs/${filename}.json`, JSON.stringify(content));
 	
-	res.setHeader('Location', `http://localhost:3030/api/jsonBlob/${filename}`);
-	res.setHeader('blobID', filename);
-	res.json(content);
-})
+  res.setHeader('Location', `http://localhost:3030/api/jsonBlob/${filename}`);
+  res.setHeader('blobID', filename);
+  res.json(content);
+});
 
 /*
 	Retrieving a JSON Blob is accomplished by sending a GET request to / api / jsonBlob / <blobId>, where <blobId> is the last part of the URL path returned from the POST request.

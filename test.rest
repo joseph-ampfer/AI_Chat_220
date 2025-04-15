@@ -26,3 +26,26 @@ Content-Type: application/json
 ### Delete a JSON Blob
 # Replace {blobId} with the actual blobId you want to delete
 DELETE http://localhost:3030/api/jsonBlob/{blobId}
+
+###
+GET http://localhost:3030/mongodb
+
+
+###
+POST http://localhost:3030/api/test-chat
+Content-Type: application/json
+
+
+###
+POST http://localhost:3030/api/chat
+Content-Type: application/json
+
+{
+  "messages": [
+      {
+        "role": "user",
+        "content": "Explain the importance of gooners"
+      }
+    ],
+  "model": "llama-3.3-70b-versatile"
+}
