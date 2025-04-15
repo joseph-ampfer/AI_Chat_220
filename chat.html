@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Chatbot</title>
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="assets/CSS/chat.css">
+  </head>
+  <body>
+
+
+    <!-- Main Content Area -->
+    <div class="" style="width: 100%;">
+      <div class="d-flex">
+        <!-- Aside: Chat History -->
+        <aside class=" chat-history bg-light collapse collapse-horizontal md-show" id="aside" style="flex-shrink: 0;">
+          <div class="p-3" style="text-wrap: nowrap; width: 240px; ">
+            <div class="d-flex flex-column">
+              <button class="btn btn-light sidebar-toggle-btn mb-3" title="Close sidebar" type="button" data-bs-toggle="collapse" data-bs-target="#aside" aria-expanded="false" aria-controls="aside">
+                <i class="bi bi-layout-sidebar fw-bold"></i>
+              </button>
+              <button id="new-chat-btn" class="btn btn-dark mb-3 d-flex">
+                <div class=" me-3">
+                  <img class="object-fit-fill rounded-circle" width="25px" height="25px" alt="Icon"  src="assets/images/project_logo.png"  />
+                </div>
+                New Chat
+              </button>
+              <button id="img-220-btn" class="btn btn-light mb-3 d-flex align-items-center">
+                <div class=" me-3">
+                  <img class="object-fit-fill rounded-circle" width="25px" height="25px" alt="Icon"  src="https://chatgpt.com/backend-api/content?id=file-SxYQO0Fq1ZkPagkFtg67DRVb&gizmo_id=g-2fkFE8rbu&ts=483666&p=gpp&sig=b8e22a3821359e471d0553815ac9de1e55f0c091cfe490d1b7ebe07df32c7a8e&v=0">
+                </div>
+                Image 220
+              </button>
+            </div>
+            <!-- <h5>Chat History</h5> -->
+            <ul id="chatHistory" class="list-group">
+              <!-- === MOCK HISTORY ITEM (for reference) ==== -->
+              <!-- <li data-index="-2" class="list-group-item d-flex justify-content-between">
+                Conversation 1
+                 Wrapper with relative positioning
+                <div class="chat-options-wrapper" style="position: relative;">
+                  <button class="three-dots-btn">
+                     Three dots icon SVG 
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots" viewBox="0 0 16 16">
+                      <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3"/>
+                    </svg>
+                  </button>
+                    Popup with options 
+                  <div class="chat-options" >
+                    <button class="rename-chat btn d-flex justify-content-between ">
+                      <i class="bi bi-pencil me-3"></i>
+                      <span>Rename</span>
+                    </button>
+                    <button class="delete-chat text-danger btn">
+                      <i class="bi bi-trash3 me-3"></i>
+                      <span>Delete</span>
+                    </button>
+                  </div>
+                </div>
+              </li> -->
+              <!-- More conversation items -->
+               <h5 class=" placeholder-glow">
+                <span class="placeholder col-6"></span>
+              </h5>
+              <p class=" placeholder-glow">
+                <span class="placeholder w-80" style="width: 94%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder " style="width: 87%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder w-86" style="width: 86%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder w-90" style="width: 90%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder" style="width: 83%;"></span>
+              </p>
+              <h5 class=" placeholder-glow">
+                <span class="placeholder col-6"></span>
+              </h5>
+              <p class=" placeholder-glow">
+                <span class="placeholder w-80" style="width: 94%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder " style="width: 89%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder w-86" style="width: 86%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder w-90" style="width: 90%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder" style="width: 82%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder" style="width: 88%;"></span>
+              </p>
+              <h5 class=" placeholder-glow">
+                <span class="placeholder col-6"></span>
+              </h5>
+              <p class=" placeholder-glow">
+                <span class="placeholder w-80" style="width: 84%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder " style="width: 96%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder w-86" style="width: 86%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder w-90" style="width: 90%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder " style="width: 79%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder" style="width: 84%;"></span>
+              </p>
+              <p class=" placeholder-glow">
+                <span class="placeholder" style="width: 89%;"></span>
+              </p>
+            </ul>
+          </div>
+        </aside>
+
+        <!-- Main Chat Interface -->
+        <main class="chat-area" style="flex-grow: 1;">
+          <!-- Navigation Bar -->
+          <nav class="navbar navbar-expand-lg navbar-light ">
+            <div class="container-fluid">
+              <button id="nav-sidebar-toggle" class="btn sidebar-toggle-btn me-3" title="Open sidebar" type="button" data-bs-toggle="collapse" data-bs-target="#aside" aria-expanded="false" aria-controls="aside">
+                <i class="bi bi-layout-sidebar fw-bold"></i>
+              </button>
+              <a class="navbar-brand" href="index.html">Chat 220</a>
+              <button
+                class="navbar-toggler"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#navbarContent"
+                aria-controls="navbarContent"
+                aria-expanded="false"
+                aria-label="Toggle navigation"
+              >
+                <span class="navbar-toggler-icon"></span>
+              </button>
+              <div class="collapse navbar-collapse" id="navbarContent">
+                <!-- Additional nav items can be added here -->
+                <ul class="navbar-nav me-auto">
+                  <li class="nav-item dropdown">
+                    <button id="modelSelect-btn" class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                      gemma2-9b-it
+                    </button>
+                    <ul id="modelSelect" class="dropdown-menu ">
+                      <li><a class="dropdown-item" href="#" >qwen-2.5-coder-32b</a></li>
+                      <li><a class="dropdown-item" href="#" >llama-3.3-70b-versatile</a></li>
+                      <li><a class="dropdown-item" href="#" >deepseek-r1-distill-qwen-32b</a></li>
+                      <li><a class="dropdown-item" href="#" >gemma2-9b-it</a></li>
+                      <li><a class="dropdown-item" href="#" >llama-3.2-90b-vision-preview</a></li>
+                    </ul>
+                  </li>
+                </ul>
+
+                <!-- post button -->
+                 <button id="postChat" class="btn btn-outline-success" type="submit">Post</button>
+              </div>
+            </div>
+          </nav>
+
+          <section id="chat-section" class="chat-messages d-flex flex-column flex-fill text-break" >
+            <div class="container-sm h-100" id="chatMessages">
+              <!-- Chat messages will appear here -->
+              
+              <div class="d-flex align-items-center justify-content-center text-center h-100" role="status">
+                <h2 class="">Hello! How can I assist you today?</h2>
+              </div>
+
+            </div>
+          </section>
+          <div class="chat-input container-sm" >
+            <form id="chatForm" class="d-flex">
+              <!-- Text input -->
+              <textarea
+                type="text"
+                class="form-control me-2"
+                id="userMessage"
+                placeholder="Type your message..."
+                autocomplete="off"
+                style="resize: none; height: 3rem;"
+              ></textarea>
+              <!-- Audio recording button  -->
+              <button id="toggle-recording" class="btn btn btn-primary me-2" style="height: 3rem;" type="button" onclick="toggleRecording()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-mic" viewBox="0 0 16 16">
+                  <path d="M3.5 6.5A.5.5 0 0 1 4 7v1a4 4 0 0 0 8 0V7a.5.5 0 0 1 1 0v1a5 5 0 0 1-4.5 4.975V15h3a.5.5 0 0 1 0 1h-7a.5.5 0 0 1 0-1h3v-2.025A5 5 0 0 1 3 8V7a.5.5 0 0 1 .5-.5"/>
+                  <path d="M10 8a2 2 0 1 1-4 0V3a2 2 0 1 1 4 0zM8 0a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V3a3 3 0 0 0-3-3"/>
+                </svg>
+              </button>
+              <!-- Image upload -->
+              <input type="file" id="imageUpload" accept="image/*" class="form-control me-2 d-none"/>
+              <button class="btn btn-primary" style="height: 3rem;" type="submit">Send</button>
+            </form>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- AXios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- Include Marked.js to process markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script> 
+    <!-- Include highlight js -->
+    <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/styles/an-old-hope.min.css">
+    <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
+    <!-- and it's easy to individually load additional languages -->
+    <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/go.min.js"></script>
+    <!-- API Keys -->
+    <script src="./config/keys.js"></script>
+    <script src="assets/JS/chat.js"></script>
+  </body>
+</html>
+
