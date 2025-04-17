@@ -3,6 +3,7 @@ const auth = require('./auth');
 const chat = require('./chat');
 const pagination = require('./pagination');
 const files = require('./files');
+const jsonBlob = require('./jsonBlob');
 
 const router = express.Router();
 
@@ -11,5 +12,6 @@ router.use('/auth', auth);                // '/api/auth'
 router.use('/chat', chat);                // '/api/chat'
 router.use('/pagination', pagination);    // '/api/pagination'
 router.use('/files', files);              // '/api/files'
+router.use('/jsonBlob', jsonBlob);        // 'api/jsonBlob'
 
 module.exports = router;
