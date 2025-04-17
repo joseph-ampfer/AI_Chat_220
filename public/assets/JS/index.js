@@ -1,4 +1,4 @@
-const PUBLIC_BLOB_URL = "https://jsonblob.com/api/jsonBlob/1346491622271148032"; // public link to the JSONBlob that stores our post data.
+const PUBLIC_BLOB_URL = "/api/pagination"; // public link to the JSONBlob that stores our post data.
 const divRow = document.getElementById("web-content"); // web content section. Used in multiple functions.
 const resultContainer = document.getElementById('result-container');
 let state = {
