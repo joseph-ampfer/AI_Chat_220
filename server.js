@@ -5,6 +5,7 @@ const fs = require('fs');
 const app = express();
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const uri = process.env.DATABASE_URI;
+const apiRoutes = require('./routes');
 
 
 // Middleware
@@ -53,7 +54,6 @@ const db = client.db('chat_220');
 
 /* ====== API ENDPOINTS ====== */
 // For defining routes in Routes folder, so we dont clog up this file
-const apiRoutes = require('./routes/api');
 app.use('/api', apiRoutes);
 
 app.get('/mongodb', async (req, res) => {

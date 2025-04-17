@@ -5,9 +5,11 @@ const upload = multer({ storage: multer.memoryStorage() });
 const { Readable } = require('stream');
 const { File } = require('formdata-node'); // polyfill for browser File API
 const Groq = require("groq-sdk");
+const { z } = require('zod');
   
 // For future
 const { callChatAPI } = require('../controllers/chatController');
+const { error } = require('console');
 
 // So we can define routes here
 const router = express.Router();
@@ -39,7 +41,7 @@ async function getGroqChatCompletion(messages, model) {
 
 
 
-// POST /api/test-chat
+// POST /api/chat/test-chat
 router.post('/test-chat', async (req, res) => {
   const userMessage = req.body.message;
 
@@ -65,13 +67,31 @@ router.post('/test-chat', async (req, res) => {
   }
 });
 
-// POST /api/chat
-router.post('/chat', async (req, res) => {
-  const messsages = req.body.messages;
-  const model = req.body.model;
+const messageSchema = z.object({
+  role: z.string(),
+  content: z.string()
+});
+
+const chatRequestSchema = z.object({
+  messages: z.array(messageSchema),
+  model: z.string()
+});
+
+// POST '/api/chat/'
+router.post('/', async (req, res) => {
+  const parseResult = chatRequestSchema.safeParse(req.body);
+
+  if (!parseResult.success) {
+    return res.status(400).json({
+      error: 'Invalid request payload',
+      details: parseResult.error.errors,
+    });
+  }
+
+  const { messages, model } = parseResult.data;
 
   try {
-    const chatCompletion = await getGroqChatCompletion(messsages, model);
+    const chatCompletion = await getGroqChatCompletion(messages, model);
     res.send(chatCompletion.choices[0]?.message?.content || "");
   } catch (err) {
     console.error('Chat error:', err.message);
