@@ -8,4 +8,8 @@ const router = express.Router();
 // So router.get('/all) === POST '/api/pagination/all'
 // etc...
 
+/* PERSONAL NOTES, REMOVE WHEN DONE 
+make call to pagination and get public posts in the get db. Look at class notes to find directly how to do this.
+*/
+
 module.exports = router;
