@@ -1,7 +1,7 @@
 const express = require('express');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 
-const uri = "mongodb+srv://xanderjm1116:<NOT_A_PASSWORD>@cluster0.sbcwer2.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const uri = "mongodb+srv://xanderjm1116:<password>@cluster0.sbcwer2.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 // Says this is a router, so use can use router.post(), router.get(), etc
