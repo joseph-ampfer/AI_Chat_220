@@ -63,6 +63,16 @@ router.post('/signup', async (req, res) => {
             return res.status(400).json({error: 'Email is in use'});
         }
 
+        //checking password length
+        if (password.length < 7 || !/\d/.test(password)) {
+            return res.status(400).json({error: 'Password must be longer than 7 characters and have a number'})
+        }
+
+        //checking email "validity" using a regular expression
+        const emailExpression = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailExpression.test(email)) {
+            return res.status(400).json({error: 'Email address is not a valid email'})
+        }
         
 
         //adding user to database after checks
