@@ -78,20 +78,28 @@ function displayPosts(filteredPosts) {
 }
 
 /* This function handles the cases of the user using the search bar to find posts on the website. */
-function searchBar() {
+async function searchBar() {
   let input = document.getElementById("userSearch").value.toLowerCase(); // search input that is then turned lowercase to filter.
   let searchBar = document.getElementById("searchbar"); // grabbing the searchbar for animations
   let sectionHeader = document.getElementById("sectionHeader"); // header of the results section that will change based on use of search bar.
   let paginationWrapper = document.getElementById("pagination-wrapper"); // pagination wrapper section, will be hidden during searches.
 
-  let filteredPosts = posts.filter((post) => {
-    const title = post.chat_summary["title"].toLowerCase();
-    const shortSummary = post.chat_summary.summary.toLowerCase();
-    // variable that will filter the titles of each of the posts that include what is in the input. Uses the array filter method
-    return title.includes(input) || shortSummary.includes(input);
+  // let filteredPosts = posts.filter((post) => {
+  //   const title = post.chat_summary["title"].toLowerCase();
+  //   const shortSummary = post.chat_summary.summary.toLowerCase();
+  //   // variable that will filter the titles of each of the posts that include what is in the input. Uses the array filter method
+  //   return title.includes(input) || shortSummary.includes(input);
+  // });
+  const response = await fetch('/api/search/input', {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json'
+    },
   });
 
-  displayPosts(filteredPosts); // load all of the posts using the filtered posts.
+  const searchResults = await response.json();
+
+  loadPosts(searchResults); // load all of the posts using the search results.
 
   /* These sets of conditionals deal with the animations based on user interaction with the searchbar. */
   if (input === "") {

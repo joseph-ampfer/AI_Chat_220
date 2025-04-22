@@ -1,2 +1,3 @@
-### Testing pagination
+### Pagination
 GET http://localhost:3030/api/pagination
+

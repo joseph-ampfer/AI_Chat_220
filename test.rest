@@ -50,3 +50,5 @@ Content-Type: application/json
   "model": "llama-3.3-70b-versatile"
 }
 
+### Pagination
+GET http://localhost:3030/api/pagination

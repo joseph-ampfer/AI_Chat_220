@@ -6,9 +6,10 @@ const router = express.Router();
 
 // GET '/api/pagination/  OR  /api/pagination?page=2&limit=20
 router.get('/', async (req, res) => {
+  let publicChats;
   try{
   const cursor = db.collection('publicChats').find().sort({"chat.timestamp":-1});
-  const publicChats = await cursor.toArray();
+  publicChats = await cursor.toArray();
   }catch(err){
     res.status(500).json(err);
   }
