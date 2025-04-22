@@ -1,4 +1,4 @@
-const PUBLIC_BLOB_URL = "/api/pagination"; // public link to the JSONBlob that stores our post data.
+const PUBLIC_BLOB_URL = "/api/pagination"; // public link to the API Endpoint that stores our post data.
 const divRow = document.getElementById("web-content"); // web content section. Used in multiple functions.
 const resultContainer = document.getElementById('result-container');
 let state = {
@@ -8,10 +8,10 @@ let state = {
   page: 1,
   rows: 9,
 };
-let posts = []; // array that will be used to store the JSONBlob data when called and will be used to display posts.
+let posts = []; // array that will be used to store the Database data when called and will be used to display posts.
 document.getElementById("userSearch").addEventListener("keyup", searchBar); // listen for user to use search bar and then run the searchBar function.
 
-/* Function to fetch the JSONBlob that holds the public posts and chats. */
+/* Function to fetch the Database that holds the public posts and chats. */
 async function fetchJSON(url) {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Fetch failed: ${response.statusText}`);
@@ -22,7 +22,7 @@ async function fetchJSON(url) {
 async function loadPosts(scrollDown = false) {
   posts = await fetchJSON(PUBLIC_BLOB_URL);
 
-  state.querySet = posts; // set the querySet to our set of posts from JSONBlob
+  state.querySet = posts; // set the querySet to our set of posts from the databasef
   let data = pagination(state.querySet, state.page, state.rows); // create the pages through the use of the pagination function.
   displayPosts(data.querySet); // display the posts that have been trimmed for the page
   pageButtons(data.pages); // create the page buttons
@@ -109,17 +109,14 @@ function searchBar() {
     searchBar.classList.add("sticky");
     searchBar.classList.remove('start');
 
-    //searchBar.style.marginTop = "800px";
 
     const y = document.getElementById('searcharea').getBoundingClientRect().bottom + window.scrollY;
     window.scrollTo({top: y, behavior: 'smooth'});
 
-    //resultContainer.scrollIntoView({ behavior: "smooth", block: "start" });
     sectionHeader.innerText = "Search Results";
     paginationWrapper.style.display = "none";
   } else {
     // If there are no results, move search bar back to original position and scroll the screen to show the 'results not found' message.
-    //searchBar.style.marginTop = "0px";
     sectionHeader.innerText = "No Results Found :(";
     divRow.scrollIntoView({ behavior: "smooth", block: "start" });
     paginationWrapper.style.display = "none";
@@ -200,7 +197,6 @@ loadPosts(); // load the posts as soon as someone accesses the page
 
 /* This function creates the link to allow someone to view a public post. */
 function redirectAndLoadChat(chat) {
-  //const chat = posts[i].chat;
   console.log(chat);
   sessionStorage.setItem("selectedPublicChat", JSON.stringify(chat));
 
