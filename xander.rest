@@ -1,0 +1,13 @@
+###
+//checking email in use
+GET http://localhost:3030/api/auth/check-email?email=asdasd
+
+###
+//signing up a user
+POST http://localhost:3030/api/auth/signup
+Content-Type: application/json
+
+{
+  "email":"asdas@gmail.com",
+  "password":"asdasd2"
+}

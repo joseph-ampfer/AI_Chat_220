@@ -1,8 +1,8 @@
 const express = require('express');
-const { MongoClient, ServerApiVersion } = require('mongodb');
 
-const uri = "mongodb+srv://xanderjm1116:<password>@cluster0.sbcwer2.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+const db = require('../db');
+
+
 
 // Says this is a router, so use can use router.post(), router.get(), etc
 const router = express.Router();
@@ -12,24 +12,14 @@ const router = express.Router();
 // So router.post('/login) === POST '/api/auth/login'
 // etc...
 
-let database;
-
-client.connect()
-    .then(() => {
-        database = client.db('Chat220');
-        console.log('Connected to database')
-        
-    })
-    .catch(err => console.log('Issue connecting to database:', err));
-
-
+// GET api/auth/check-email
 router.get('/check-email', async (req, res) => {
     const {email} = req.query;
     if (!email) {
         return res.status(400).json({error: 'Email is required'});
     }
     try {
-        const usersCollection = database.collection('users');
+        const usersCollection = db.collection('users');
         const existingUser = await usersCollection.findOne({email});
 
         if (existingUser) {
@@ -45,7 +35,7 @@ router.get('/check-email', async (req, res) => {
     }
 });
 
-
+// POST api/auth/signup 
 router.post('/signup', async (req, res) => {
     const {email, password} = req.body;
 
@@ -55,7 +45,7 @@ router.post('/signup', async (req, res) => {
     }
 
     try {
-        const usersCollection = database.collection('users');
+        const usersCollection = db.collection('users');
 
         //checking email in use
         const existingUser = await usersCollection.findOne({email});
