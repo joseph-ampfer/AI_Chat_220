@@ -8,6 +8,16 @@ POST http://localhost:3030/api/auth/signup
 Content-Type: application/json
 
 {
-  "email":"asdas@gmail.com",
-  "password":"asdasd2"
+  "email":"blahblah@gmail.com",
+  "password":"asdasd123"
+}
+
+###
+//logging a user in
+POST http://localhost:3030/api/auth/login
+Content-Type: application/json
+
+{
+  "email":"blahblah@gmail.com",
+  "password":"asdasd123"
 }

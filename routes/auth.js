@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require('bcrypt');
 
 const db = require('../db');
 
@@ -65,8 +66,11 @@ router.post('/signup', async (req, res) => {
         }
         
 
+        //hashing the password with bcrypt
+        const hashedpass = await bcrypt.hash(password, 10);
+
         //adding user to database after checks
-        await usersCollection.insertOne({email, password});
+        await usersCollection.insertOne({email, hashedpass});
         res.status(201).json({success: 'User added to database'});
     }
     catch (err) {
@@ -74,5 +78,33 @@ router.post('/signup', async (req, res) => {
     }
 
 });
+
+// POST api/auth/login
+router.post('/login', async (req, res) => {
+    const {email, password} = req.body;
+    if (!email || !password) {
+        return res.status(400).json({error: 'Email and password are required'});
+    }
+
+    try {
+        const usersCollection = db.collection('users');
+        const user = await usersCollection.findOne({email});
+
+        if (!user) {
+            return res.status(400).json({ error: 'Incorrect email or password'});
+        }
+
+        const matching = await bcrypt.compare(password, user.hashedpass);
+        if (!matching) {
+            return res.status(400).json({error: 'Incorrect email or password'});
+        }
+
+        res.status(200).json({success: 'login sucessful', userId: user._id});
+    }
+    catch(err) {
+        console.log(err);
+        res.status(500).json({error: 'Error logging in'});
+    }
+})
 
 module.exports = router;
