@@ -2,6 +2,16 @@ const PUBLIC_BLOB_URL = "/api/pagination"; // public link to the API Endpoint th
 const SEARCH_URL = "/api/search"; // public link to the API Endpoint that will query the database for search results.
 const divRow = document.getElementById("web-content"); // web content section. Used in multiple functions.
 const resultContainer = document.getElementById('result-container');
+
+const debounce = (callback, wait) => {
+  let timeoutId = null;
+  return(...args) => {
+    timeoutId = setTimeout(() => {
+      callback(...args);}, wait);
+    };
+  };
+
+
 let state = {
   // Object to hold the current dataset. This will be updated as a user clicks to a different page and also determines how many items are shown on one page.
   querySet: [],
@@ -10,7 +20,7 @@ let state = {
   rows: 9,
 };
 let posts = []; // array that will be used to store the JSONBlob data when called and will be used to display posts.
-document.getElementById("userSearch").addEventListener("keyup", searchBar); // listen for user to use search bar and then run the searchBar function.
+document.getElementById("userSearch").addEventListener("keyup", debounce(searchBar, 300)); // listen for user to use search bar and then run the searchBar function.
 
 /* Function to fetch the JSONBlob that holds the public posts and chats. */
 async function fetchJSON(url) {
@@ -32,8 +42,16 @@ async function renderPosts(scrollDown = false) {
     divRow.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }
-async function renderSearchResults(){
+async function renderSearchResults(searchResults, scrollDown = false) {
+  
+  state.querySet = searchResults; // set the querySet to our set of posts from JSONBlob
+  let data = pagination(state.querySet, state.page, state.rows); // create the pages through the use of the pagination function.
+  displayPosts(data.querySet); // display the posts that have been trimmed for the page
+  pageButtons(data.pages); // create the page buttons
 
+  if (scrollDown) {
+    divRow.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 }
 
 /* This function displays all posts in an ordered way using bootstrap cards. */
@@ -87,23 +105,26 @@ async function searchBar() {
   let searchBar = document.getElementById("searchbar"); // grabbing the searchbar for animations
   let sectionHeader = document.getElementById("sectionHeader"); // header of the results section that will change based on use of search bar.
   let paginationWrapper = document.getElementById("pagination-wrapper"); // pagination wrapper section, will be hidden during searches.
+  let response;
+  let searchResults;
+  try {
+    if(input){
+    response = await fetch(`/api/search/${input}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+    });
+    searchResults = await response.json();
+    renderSearchResults(searchResults); // load all of the posts using the filtered posts.
+  }
+  } catch (err) {
+    console.log('error with search', err);
+  }
 
-  // let filteredPosts = posts.filter((post) => {
-  //   const title = post.chat_summary["title"].toLowerCase();
-  //   const shortSummary = post.chat_summary.summary.toLowerCase();
-  //   // variable that will filter the titles of each of the posts that include what is in the input. Uses the array filter method
-  //   return title.includes(input) || shortSummary.includes(input);
-  // });
-  const response = await fetch('/api/search/input', {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-  });
+  
 
-  const searchResults = await response.json();
-
-  renderSearchResults(searchResults); // load all of the posts using the filtered posts.
+  
 
   /* These sets of conditionals deal with the animations based on user interaction with the searchbar. */
   if (input === "") {
@@ -115,7 +136,7 @@ async function searchBar() {
     sectionHeader.innerText = "Recent Chat Posts from our Users";
     paginationWrapper.style.display = "block";
     renderPosts();
-  } else if (filteredPosts.length > 0) {
+  } else if (searchResults.length > 0) {
     // If there are search results, move the search bar and scroll screen to search results and change the header to 'Search Results'.
     searchBar.style.transition = "all 0.5s ease-in-out";
     searchBar.classList.add("sticky");
@@ -124,7 +145,7 @@ async function searchBar() {
     //searchBar.style.marginTop = "800px";
 
     const y = document.getElementById('searcharea').getBoundingClientRect().bottom + window.scrollY;
-    window.scrollTo({top: y, behavior: 'smooth'});
+    window.scrollTo({ top: y, behavior: 'smooth' });
 
     //resultContainer.scrollIntoView({ behavior: "smooth", block: "start" });
     sectionHeader.innerText = "Search Results";

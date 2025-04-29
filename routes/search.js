@@ -4,7 +4,7 @@ const db = require('../db');
 // Says this is a router, so use can use router.post(), router.get(), etc
 const router = express.Router();
 
-// GET '/api/search/input
+// GET '/api/search/:input
 router.get('/:input', async (req, res) => {
   const input = req.params.input;
   const regex = new RegExp(input, 'i');
