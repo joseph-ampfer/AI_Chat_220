@@ -1,4 +1,5 @@
 const PUBLIC_BLOB_URL = "/api/pagination"; // public link to the API Endpoint that stores our post data.
+const SEARCH_URL = "/api/search"; // public link to the API Endpoint that will query the database for search results.
 const divRow = document.getElementById("web-content"); // web content section. Used in multiple functions.
 const resultContainer = document.getElementById('result-container');
 let state = {
@@ -19,7 +20,7 @@ async function fetchJSON(url) {
 }
 
 /* Function to load all of the posts to the page. scrollDown is used for when a user clicks the next page. */
-async function loadPosts(scrollDown = false) {
+async function renderPosts(scrollDown = false) {
   posts = await fetchJSON(PUBLIC_BLOB_URL);
 
   state.querySet = posts; // set the querySet to our set of posts from JSONBlob
@@ -30,6 +31,9 @@ async function loadPosts(scrollDown = false) {
   if (scrollDown) {
     divRow.scrollIntoView({ behavior: "smooth", block: "start" });
   }
+}
+async function renderSearchResults(){
+
 }
 
 /* This function displays all posts in an ordered way using bootstrap cards. */
@@ -78,20 +82,28 @@ function displayPosts(filteredPosts) {
 }
 
 /* This function handles the cases of the user using the search bar to find posts on the website. */
-function searchBar() {
+async function searchBar() {
   let input = document.getElementById("userSearch").value.toLowerCase(); // search input that is then turned lowercase to filter.
   let searchBar = document.getElementById("searchbar"); // grabbing the searchbar for animations
   let sectionHeader = document.getElementById("sectionHeader"); // header of the results section that will change based on use of search bar.
   let paginationWrapper = document.getElementById("pagination-wrapper"); // pagination wrapper section, will be hidden during searches.
 
-  let filteredPosts = posts.filter((post) => {
-    const title = post.chat_summary["title"].toLowerCase();
-    const shortSummary = post.chat_summary.summary.toLowerCase();
-    // variable that will filter the titles of each of the posts that include what is in the input. Uses the array filter method
-    return title.includes(input) || shortSummary.includes(input);
+  // let filteredPosts = posts.filter((post) => {
+  //   const title = post.chat_summary["title"].toLowerCase();
+  //   const shortSummary = post.chat_summary.summary.toLowerCase();
+  //   // variable that will filter the titles of each of the posts that include what is in the input. Uses the array filter method
+  //   return title.includes(input) || shortSummary.includes(input);
+  // });
+  const response = await fetch('/api/search/input', {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json'
+    },
   });
 
-  displayPosts(filteredPosts); // load all of the posts using the filtered posts.
+  const searchResults = await response.json();
+
+  renderSearchResults(searchResults); // load all of the posts using the filtered posts.
 
   /* These sets of conditionals deal with the animations based on user interaction with the searchbar. */
   if (input === "") {
@@ -102,7 +114,7 @@ function searchBar() {
     window.scrollTo({ top: 0, behavior: "smooth" });
     sectionHeader.innerText = "Recent Chat Posts from our Users";
     paginationWrapper.style.display = "block";
-    loadPosts();
+    renderPosts();
   } else if (filteredPosts.length > 0) {
     // If there are search results, move the search bar and scroll screen to search results and change the header to 'Search Results'.
     searchBar.style.transition = "all 0.5s ease-in-out";
@@ -154,7 +166,7 @@ function pageButtons(pages) {
     // on click go to the previous page.
     if (state.page > 1) {
       state.page--;
-      loadPosts(true); // load the posts
+      renderPosts(true); // load the posts
     }
   });
   wrapper.appendChild(prevButton); // Add the previous button to the wrapper
@@ -174,7 +186,7 @@ function pageButtons(pages) {
     button.addEventListener("click", function () {
       // On click, go to the page of posts.
       state.page = parseInt(this.value); // load the next set of pages by changing the page in our state object to the current page.
-      loadPosts(true); // load the posts.
+      renderPosts(true); // load the posts.
     });
 
     wrapper.appendChild(button); // add this button to the wrapper
@@ -190,13 +202,13 @@ function pageButtons(pages) {
     if (state.page < pages) {
       // if current page is greater than the state.page, increase the page.
       state.page++;
-      loadPosts(true); // load the posts.
+      renderPosts(true); // load the posts.
     }
   });
   wrapper.appendChild(nextButton); // add the next button to the wrapper.
 }
 
-loadPosts(); // load the posts as soon as someone accesses the page
+renderPosts(); // load the posts as soon as someone accesses the page
 
 /* This function creates the link to allow someone to view a public post. */
 function redirectAndLoadChat(chat) {
