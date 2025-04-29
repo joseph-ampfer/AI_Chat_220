@@ -84,22 +84,22 @@ async function searchBar() {
   let sectionHeader = document.getElementById("sectionHeader"); // header of the results section that will change based on use of search bar.
   let paginationWrapper = document.getElementById("pagination-wrapper"); // pagination wrapper section, will be hidden during searches.
 
-  // let filteredPosts = posts.filter((post) => {
-  //   const title = post.chat_summary["title"].toLowerCase();
-  //   const shortSummary = post.chat_summary.summary.toLowerCase();
-  //   // variable that will filter the titles of each of the posts that include what is in the input. Uses the array filter method
-  //   return title.includes(input) || shortSummary.includes(input);
-  // });
-  const response = await fetch('/api/search/input', {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+  let filteredPosts = posts.filter((post) => {
+    const title = post.chat_summary["title"].toLowerCase();
+    const shortSummary = post.chat_summary.summary.toLowerCase();
+    // variable that will filter the titles of each of the posts that include what is in the input. Uses the array filter method
+    return title.includes(input) || shortSummary.includes(input);
   });
+  // const response = await fetch('/api/search/input', {
+  //   method: 'GET',
+  //   headers: {
+  //     'Content-Type': 'application/json'
+  //   },
+  // });
 
-  const searchResults = await response.json();
+  // const searchResults = await response.json();
 
-  loadPosts(searchResults); // load all of the posts using the search results.
+  loadPosts(filteredPosts); // load all of the posts using the search results.
 
   /* These sets of conditionals deal with the animations based on user interaction with the searchbar. */
   if (input === "") {
