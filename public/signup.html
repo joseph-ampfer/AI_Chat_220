@@ -126,6 +126,8 @@
             });
 
             if (response.ok) {
+              let smallUsername = newEmail.substring(0, newEmail.indexOf("@"));
+              localStorage.setItem("username", smallUsername);
               window.location.replace('index.html');
             }
           }

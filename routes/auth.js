@@ -1,5 +1,7 @@
+require('dotenv').config();
 const express = require('express');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 const db = require('../db');
 
@@ -79,6 +81,8 @@ router.post('/signup', async (req, res) => {
 
 });
 
+
+
 // POST api/auth/login
 router.post('/login', async (req, res) => {
     const {email, password} = req.body;
@@ -98,8 +102,10 @@ router.post('/login', async (req, res) => {
         if (!matching) {
             return res.status(400).json({error: 'Incorrect email or password'});
         }
-
-        res.status(200).json({success: 'login sucessful', userId: user._id});
+        const iat = Math.floor(Date.now() / 1000);
+        const exp = iat + (3 * 24 * 60 * 60);
+        const token = jwt.sign({userId: user._id, iat: iat, exp: exp}, process.env.JWT_SECRET);
+        res.status(200).json({success: 'login sucessful', token: token});
     }
     catch(err) {
         console.log(err);
