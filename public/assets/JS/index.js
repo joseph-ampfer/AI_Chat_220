@@ -8,10 +8,10 @@ let state = {
   page: 1,
   rows: 9,
 };
-let posts = []; // array that will be used to store the Database data when called and will be used to display posts.
+let posts = []; // array that will be used to store the JSONBlob data when called and will be used to display posts.
 document.getElementById("userSearch").addEventListener("keyup", searchBar); // listen for user to use search bar and then run the searchBar function.
 
-/* Function to fetch the Database that holds the public posts and chats. */
+/* Function to fetch the JSONBlob that holds the public posts and chats. */
 async function fetchJSON(url) {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Fetch failed: ${response.statusText}`);
@@ -22,7 +22,7 @@ async function fetchJSON(url) {
 async function loadPosts(scrollDown = false) {
   posts = await fetchJSON(PUBLIC_BLOB_URL);
 
-  state.querySet = posts; // set the querySet to our set of posts from the databasef
+  state.querySet = posts; // set the querySet to our set of posts from JSONBlob
   let data = pagination(state.querySet, state.page, state.rows); // create the pages through the use of the pagination function.
   displayPosts(data.querySet); // display the posts that have been trimmed for the page
   pageButtons(data.pages); // create the page buttons
@@ -78,28 +78,20 @@ function displayPosts(filteredPosts) {
 }
 
 /* This function handles the cases of the user using the search bar to find posts on the website. */
-async function searchBar() {
+function searchBar() {
   let input = document.getElementById("userSearch").value.toLowerCase(); // search input that is then turned lowercase to filter.
   let searchBar = document.getElementById("searchbar"); // grabbing the searchbar for animations
   let sectionHeader = document.getElementById("sectionHeader"); // header of the results section that will change based on use of search bar.
   let paginationWrapper = document.getElementById("pagination-wrapper"); // pagination wrapper section, will be hidden during searches.
 
-  // let filteredPosts = posts.filter((post) => {
-  //   const title = post.chat_summary["title"].toLowerCase();
-  //   const shortSummary = post.chat_summary.summary.toLowerCase();
-  //   // variable that will filter the titles of each of the posts that include what is in the input. Uses the array filter method
-  //   return title.includes(input) || shortSummary.includes(input);
-  // });
-  const response = await fetch('/api/search/input', {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+  let filteredPosts = posts.filter((post) => {
+    const title = post.chat_summary["title"].toLowerCase();
+    const shortSummary = post.chat_summary.summary.toLowerCase();
+    // variable that will filter the titles of each of the posts that include what is in the input. Uses the array filter method
+    return title.includes(input) || shortSummary.includes(input);
   });
 
-  const searchResults = await response.json();
-
-  loadPosts(searchResults); // load all of the posts using the search results.
+  displayPosts(filteredPosts); // load all of the posts using the filtered posts.
 
   /* These sets of conditionals deal with the animations based on user interaction with the searchbar. */
   if (input === "") {
@@ -117,14 +109,17 @@ async function searchBar() {
     searchBar.classList.add("sticky");
     searchBar.classList.remove('start');
 
+    //searchBar.style.marginTop = "800px";
 
     const y = document.getElementById('searcharea').getBoundingClientRect().bottom + window.scrollY;
     window.scrollTo({top: y, behavior: 'smooth'});
 
+    //resultContainer.scrollIntoView({ behavior: "smooth", block: "start" });
     sectionHeader.innerText = "Search Results";
     paginationWrapper.style.display = "none";
   } else {
     // If there are no results, move search bar back to original position and scroll the screen to show the 'results not found' message.
+    //searchBar.style.marginTop = "0px";
     sectionHeader.innerText = "No Results Found :(";
     divRow.scrollIntoView({ behavior: "smooth", block: "start" });
     paginationWrapper.style.display = "none";
@@ -205,6 +200,7 @@ loadPosts(); // load the posts as soon as someone accesses the page
 
 /* This function creates the link to allow someone to view a public post. */
 function redirectAndLoadChat(chat) {
+  //const chat = posts[i].chat;
   console.log(chat);
   sessionStorage.setItem("selectedPublicChat", JSON.stringify(chat));
 
