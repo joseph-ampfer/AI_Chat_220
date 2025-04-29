@@ -2,24 +2,26 @@ const PUBLIC_BLOB_URL = "/api/pagination"; // public link to the API Endpoint th
 const SEARCH_URL = "/api/search"; // public link to the API Endpoint that will query the database for search results.
 const divRow = document.getElementById("web-content"); // web content section. Used in multiple functions.
 const resultContainer = document.getElementById('result-container');
+let activeSearching = false; // Boolean value to determine if a user is actively searching or not.
+let searchResults = [];
+let posts = []; // array that will be used to store the JSONBlob data when called and will be used to display posts.
 
 const debounce = (callback, wait) => {
   let timeoutId = null;
-  return(...args) => {
+  return (...args) => {
     timeoutId = setTimeout(() => {
-      callback(...args);}, wait);
-    };
+      callback(...args);
+    }, wait);
   };
+};
 
-
-let state = {
-  // Object to hold the current dataset. This will be updated as a user clicks to a different page and also determines how many items are shown on one page.
+let state = { // Object to hold the current dataset. This will be updated as a user clicks to a different page and also determines how many items are shown on one page.
   querySet: [],
 
   page: 1,
   rows: 9,
 };
-let posts = []; // array that will be used to store the JSONBlob data when called and will be used to display posts.
+
 document.getElementById("userSearch").addEventListener("keyup", debounce(searchBar, 300)); // listen for user to use search bar and then run the searchBar function.
 
 /* Function to fetch the JSONBlob that holds the public posts and chats. */
@@ -43,7 +45,7 @@ async function renderPosts(scrollDown = false) {
   }
 }
 async function renderSearchResults(searchResults, scrollDown = false) {
-  
+
   state.querySet = searchResults; // set the querySet to our set of posts from JSONBlob
   let data = pagination(state.querySet, state.page, state.rows); // create the pages through the use of the pagination function.
   displayPosts(data.querySet); // display the posts that have been trimmed for the page
@@ -106,25 +108,26 @@ async function searchBar() {
   let sectionHeader = document.getElementById("sectionHeader"); // header of the results section that will change based on use of search bar.
   let paginationWrapper = document.getElementById("pagination-wrapper"); // pagination wrapper section, will be hidden during searches.
   let response;
-  let searchResults;
   try {
-    if(input){
-    response = await fetch(`/api/search/${input}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-    });
-    searchResults = await response.json();
-    renderSearchResults(searchResults); // load all of the posts using the filtered posts.
-  }
+    if (input) {
+      response = await fetch(`/api/search/${input}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+      });
+      state.page = 1; // Return the user back to page one if they start a new search.
+      searchResults = await response.json(); // Store the returned results into the searchResults variable.
+      activeSearching = true; // User is searching, set this boolean to true.
+      renderSearchResults(searchResults); // load all of the posts using the filtered posts.
+    }
   } catch (err) {
     console.log('error with search', err);
   }
 
-  
 
-  
+
+
 
   /* These sets of conditionals deal with the animations based on user interaction with the searchbar. */
   if (input === "") {
@@ -135,6 +138,7 @@ async function searchBar() {
     window.scrollTo({ top: 0, behavior: "smooth" });
     sectionHeader.innerText = "Recent Chat Posts from our Users";
     paginationWrapper.style.display = "block";
+    activeSearching = false;
     renderPosts();
   } else if (searchResults.length > 0) {
     // If there are search results, move the search bar and scroll screen to search results and change the header to 'Search Results'.
@@ -149,7 +153,6 @@ async function searchBar() {
 
     //resultContainer.scrollIntoView({ behavior: "smooth", block: "start" });
     sectionHeader.innerText = "Search Results";
-    paginationWrapper.style.display = "none";
   } else {
     // If there are no results, move search bar back to original position and scroll the screen to show the 'results not found' message.
     //searchBar.style.marginTop = "0px";
@@ -187,7 +190,11 @@ function pageButtons(pages) {
     // on click go to the previous page.
     if (state.page > 1) {
       state.page--;
-      renderPosts(true); // load the posts
+      if (!activeSearching) {
+        renderPosts(true); // load the posts
+      } else {
+        renderSearchResults(searchResults, true);
+      }
     }
   });
   wrapper.appendChild(prevButton); // Add the previous button to the wrapper
@@ -207,7 +214,11 @@ function pageButtons(pages) {
     button.addEventListener("click", function () {
       // On click, go to the page of posts.
       state.page = parseInt(this.value); // load the next set of pages by changing the page in our state object to the current page.
-      renderPosts(true); // load the posts.
+      if (!activeSearching) {
+        renderPosts(true); // load the posts
+      } else {
+        renderSearchResults(searchResults, true);
+      }
     });
 
     wrapper.appendChild(button); // add this button to the wrapper
@@ -223,7 +234,11 @@ function pageButtons(pages) {
     if (state.page < pages) {
       // if current page is greater than the state.page, increase the page.
       state.page++;
-      renderPosts(true); // load the posts.
+      if (!activeSearching) {
+        renderPosts(true); // load the posts
+      } else {
+        renderSearchResults(searchResults, true);
+      }
     }
   });
   wrapper.appendChild(nextButton); // add the next button to the wrapper.
