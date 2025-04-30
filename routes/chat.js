@@ -3,13 +3,19 @@ const express = require('express');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 const { Readable } = require('stream');
-const { File } = require('formdata-node'); // polyfill for browser File API
+const { File } = require('formdata-node'); // polyfill for browser File API (used in transcription)
 const Groq = require("groq-sdk");
 const { z } = require('zod');
+const db = require('../db');
+const { ObjectId } = require('mongodb');
+const modelCapabilities = require('../config/modelCapabilities');
   
 // For future
 const { callChatAPI } = require('../controllers/chatController');
 const { error } = require('console');
+const { title } = require('process');
+const { generateReadUrl } = require('../helpers/filesHelpers');
+
 
 // So we can define routes here
 const router = express.Router();
@@ -41,7 +47,7 @@ async function getGroqChatCompletion(messages, model) {
 
 
 
-// POST /api/chat/test-chat
+// POST /api/chats/test-chat
 router.post('/test-chat', async (req, res) => {
   const userMessage = req.body.message;
 
@@ -67,39 +73,39 @@ router.post('/test-chat', async (req, res) => {
   }
 });
 
-const messageSchema = z.object({
-  role: z.string(),
-  content: z.string()
-});
+// const messageSchema = z.object({
+//   role: z.string(),
+//   content: z.string()
+// });
 
-const chatRequestSchema = z.object({
-  messages: z.array(messageSchema),
-  model: z.string()
-});
+// const chatRequestSchema = z.object({
+//   messages: z.array(messageSchema),
+//   model: z.string()
+// });
 
-// POST '/api/chat/'
-router.post('/', async (req, res) => {
-  const parseResult = chatRequestSchema.safeParse(req.body);
+// // POST '/api/chats/'
+// router.post('/', async (req, res) => {
+//   const parseResult = chatRequestSchema.safeParse(req.body);
 
-  if (!parseResult.success) {
-    return res.status(400).json({
-      error: 'Invalid request payload',
-      details: parseResult.error.errors,
-    });
-  }
+//   if (!parseResult.success) {
+//     return res.status(400).json({
+//       error: 'Invalid request payload',
+//       details: parseResult.error.errors,
+//     });
+//   }
 
-  const { messages, model } = parseResult.data;
+//   const { messages, model } = parseResult.data;
 
-  try {
-    const chatCompletion = await getGroqChatCompletion(messages, model);
-    res.send(chatCompletion.choices[0]?.message?.content || "");
-  } catch (err) {
-    console.error('Chat error:', err.message);
-    res.status(500).json({ error: 'Something went wrong' });
-  }
-});
+//   try {
+//     const chatCompletion = await getGroqChatCompletion(messages, model);
+//     res.send(chatCompletion.choices[0]?.message?.content || "");
+//   } catch (err) {
+//     console.error('Chat error:', err.message);
+//     res.status(500).json({ error: 'Something went wrong' });
+//   }
+// });
 
-// POST /api/transcriptions
+// POST /api/chats/transcriptions
 router.post('/transcriptions', upload.single('file'), async (req, res) => {
   console.log(req.body);
   if (!req.file) {
@@ -167,6 +173,367 @@ router.post('/summarize-chat', async (req, res) => {
     res.status(500).json({ error: 'Something went wrong' });
   }
 
+});
+
+const getChatSchema = z.object({
+
+});
+
+
+// GET '/api/chats/
+// List chats (sidebar)
+const userid = z.string()
+router.get('/', async (req, res) => {
+  // Getting userId from header
+  const user = req.headers.authorization;
+  if (!ObjectId.isValid(user)) {
+    return res.status(400).json({ error: 'Invalid user' });
+  }
+  
+  const userId = new ObjectId(user);
+  const results = await db.collection('chats')
+    .find({ userId: userId })
+    .project({ _id: true, title: true, updatedAt: true, isImageChat: true })
+    .sort({ updatedAt: -1 }).toArray();
+  res.json(results);
+});
+
+
+// GET '/api/chats/:chatId
+// Get a single conversation
+router.get('/:chatId', async (req, res) => {
+  
+  // Getting userId from header
+  const user = req.headers.authorization;
+  // Check if authorized, 
+  // if not, send 400 unauthorized error
+
+  if (!ObjectId.isValid(user)) {
+    return res.status(400).send({ error: 'Invalid user' });
+  }
+  const userId = new ObjectId(user);
+
+  const { chatId } = req.params;
+  const chat = await db.collection('chats').findOne({ _id: new ObjectId(chatId), userId: userId });
+  
+  // Walk through each message and generate url for images, parallel bc of async
+  const promises = chat.conversation.map(async message => {
+    const fileId = message.content?.[1]?.image_url?.key;
+    if (!fileId) return;
+
+    const url = await generateReadUrl(message.content[1].image_url.key);
+    message.content[1].image_url = { url: url };
+  });
+
+  await Promise.all(promises);
+
+  if (!chat) return res.status(404).send({ error: 'Chat not found' });
+  res.json(chat);
+});
+
+const ModelEnum = z.enum([
+  'gemma2-9b-it',
+  'llama-3.3-70b-versatile',
+  'llama-3.1-8b-instant',
+  'llama-guard-3-8b',
+  'llama3-70b-8192',
+  'deepseek-r1-distill-llama-70b',
+  'meta-llama/llama-4-maverick-17b-128e-instruct',
+  'meta-llama/llama-4-scout-17b-16e-instruct',
+]);
+
+const messageScheme = z.object({
+  text: z.string(),
+  model: ModelEnum,
+  fileId: z.string().optional(),
+});
+
+// POST '/api/chats/:chatId/messages
+// Continue a convo (convo already exists), send chatId
+router.post('/:chatId/messages', async (req, res) => {
+
+  // Getting userId from header
+  const user = req.headers.authorization;
+  if (!ObjectId.isValid(user)) {
+    return res.status(400).json({ error: 'Invalid user' });
+  }
+  const userId = new ObjectId(user);
+
+  const { chatId } = req.params;
+  if (!ObjectId.isValid(chatId)) {
+    return res.status(400).json({ error: 'Invalid chatId' });
+  }
+
+  const parseResult =  messageScheme.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({
+      error: 'Invalid request payload',
+      details: parseResult.error.errors,
+    });
+  };
+
+  const { text, model, fileId } = parseResult.data;
+
+  const capablity = modelCapabilities[model] || { vision: false };
+
+  console.log(parseResult.data);
+
+  // Build content in one place
+  let contentPayload;
+  let url;
+  if (capablity.vision) { 
+    contentPayload = [{ type: 'text', text: text }];
+    if (fileId) {
+      console.log('inside if (fileid)');
+      // Get temp url
+      url = await generateReadUrl(fileId);
+      console.log(url);
+      // Build content
+      contentPayload.push({
+        type: 'image_url',
+        image_url: { key: fileId },  // change to { url: url } when sending to ai model
+      });
+    } 
+  } else {
+    // plain chat models just take a string, not an array
+    contentPayload = text;
+  }
+
+  // Add user message to mongodb
+  await db.collection('chats').updateOne(
+    { _id: new ObjectId(chatId), userId: userId },
+    { $set: { updatedAt: new Date() }, $push: { conversation: { 'role': 'user', 'content': contentPayload, 'sentAt': new Date() } } }
+  );
+
+
+  // This junk is to allow vision models and txt models to overlap
+  // Getting only text for txt models, the imageurls for image models
+  const pipline = [
+    { $match: { _id: new ObjectId(chatId), userId: userId } },
+    {
+      $project: {
+        _id: false,
+        conversation: {
+          $map: {
+            input: "$conversation",
+            as: "msg",
+            in: {
+              role: "$$msg.role",
+              content: {
+                $cond: [
+                  { $isArray: "$$msg.content" },
+                  // If it’s an array, find the text block and extract its `.text`
+                  {
+                    $first: {
+                      $map: {
+                        input: {
+                          $filter: {
+                            input: "$$msg.content",
+                            as:    "blk",
+                            cond:  { $eq: [ "$$blk.type", "text" ] }
+                          }
+                        },
+                        as:    "t",
+                        in:    "$$t.text"
+                      }
+                    }
+                  },
+                  "$$msg.content"
+                ]
+              }
+            }
+          }
+        }
+    }}
+  ];
+
+  // Use pipline to get clean text only conversation, if txt model
+  let conversation
+
+  if (capablity.vision) {
+    const chatObject = await db.collection('chats').findOne(
+      { _id: new ObjectId(chatId), userId: userId },
+      { projection: { _id: false, 'conversation.role': true, 'conversation.content': true } }
+    );
+    conversation = chatObject.conversation;
+
+    // Changing image_url from {id:fileId} to {url:url}
+    // Walk through each message and generate url for images, parallel bc of async
+    const promises = conversation.map(async message => {
+      const fileId = message.content?.[1]?.image_url?.key;
+      if (!fileId) return;
+
+      const url = await generateReadUrl(message.content[1].image_url.key);
+      message.content[1].image_url = { url: url };
+    });
+    await Promise.all(promises);
+    
+  } else {
+    // Not vision model, deconstruct all content: [] to content: "string"
+    const chatArr = await db.collection('chats').aggregate(pipline).toArray();
+    conversation = chatArr[0].conversation;
+  }
+  
+  // Send to ai
+  try {
+    const chatCompletion = await getGroqChatCompletion(conversation, model);
+    const aiResponse = chatCompletion.choices[0]?.message?.content || "";
+    res.send(aiResponse);
+    
+    // Store ai reply to mongodb
+    await db.collection('chats').updateOne(
+      { _id: new ObjectId(chatId), userId: userId },
+      { $push: { conversation: { 'role': 'assistant', 'content': aiResponse, 'model':model, 'usage':chatCompletion.usage, 'sentAt': new Date() } } }
+    );
+  } catch (err) {
+    console.error('Chat error:', err.message);
+    res.status(500).json({ error: 'Something went wrong' });
+  }
+
+});
+
+const newChatSchema = z.object({
+  title: z.string()
+});
+
+// Create a new chat, return its chatId 
+// POST '/api/chats
+router.post('/', async (req, res) => {
+
+  // Getting userId from header
+  const user = req.headers.authorization;
+  if (!ObjectId.isValid(user)) {
+    return res.status(400).json({ error: 'Invalid user' });
+  }
+  const userId = new ObjectId(user);
+
+  const parseResult =  newChatSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({
+      error: 'Invalid request payload',
+      details: parseResult.error.errors,
+    });
+  };
+
+  const { title } = parseResult.data;
+
+  const now = new Date();
+
+  // Insert new document
+  const { insertedId } = await db.collection('chats').insertOne({
+    userId: userId, title: title, createdAt: now, updatedAt: now, isImageChat: false, conversation: []
+  });
+
+  res.status(201).json(insertedId)
+
+});
+
+// DELETE /api/chats/${chatId}/delete
+router.delete('/:chatId/delete', async (req, res) => {
+
+  // Getting userId from header
+  const user = req.headers.authorization;
+  if (!ObjectId.isValid(user)) {
+    return res.status(400).json({ error: 'Invalid user' });
+  }
+  const userId = new ObjectId(user);
+
+  const { chatId } = req.params
+
+  const response = await db.collection('chats').deleteOne({ _id: new ObjectId(chatId), userId: userId });
+  console.log(response);
+
+  res.status(200).json({status:"deleted"});
+});
+
+
+// PATCH /api/chats/${chatId}/rename
+router.patch('/:chatId/rename', async (req, res) => {
+
+  // Getting userId from header
+  const user = req.headers.authorization;
+  if (!ObjectId.isValid(user)) {
+    return res.status(400).json({ error: 'Invalid user' });
+  }
+  const userId = new ObjectId(user);
+
+  const { chatId } = req.params
+
+  const parseResult = newChatSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({
+      error: 'Invalid request payload',
+      details: parseResult.error.errors,
+    });
+  };
+
+  const { title } = parseResult.data;
+
+  const response = await db.collection('chats').updateOne(
+    { _id: new ObjectId(chatId), userId: userId }, { $set: { title: title } }
+  );
+  console.log(response);
+
+  res.status(200).json({status:"successfully renamed"});
+});
+
+
+const imageGenRouteScheme = z.object({
+  text: z.string(),
+  model: z.string(),
+  fileId: z.string(),
+});
+
+// POST /api/chats/${chatId}/imageGen
+router.post('/:chatId/imageGen', async (req, res) => {
+  // Getting userId from header
+  const user = req.headers.authorization;
+  if (!ObjectId.isValid(user)) {
+    return res.status(400).json({ error: 'Invalid user' });
+  }
+  const userId = new ObjectId(user);
+
+  const { chatId } = req.params;
+  if (!ObjectId.isValid(chatId)) {
+    return res.status(400).json({ error: 'Invalid chatId' });
+  }
+
+  const parseResult =  imageGenRouteScheme.safeParse(req.body);
+  if (!parseResult.success) {
+    return res.status(400).json({
+      error: 'Invalid request payload',
+      details: parseResult.error.errors,
+    });
+  };
+
+  const { text, model, fileId } = parseResult.data;
+
+  console.log(parseResult.data);
+
+  // Build content in one place
+  let contentPayload = [
+    { type: 'text', text: "" },
+    {
+      type: 'image_url',
+      image_url: { key: fileId },  // change to { url: url } when sending to ai model
+    }
+  ];
+
+  // Add user message to mongodb
+  await db.collection('chats').updateOne(
+    { _id: new ObjectId(chatId), userId: userId },
+    {
+      $set: { updatedAt: new Date(), isImageChat: true },
+      $push: {
+        conversation: {
+          $each: [
+          { 'role': 'user', 'content': text, 'sentAt': new Date() },
+          { 'role': 'assistant', 'content': contentPayload, 'model': model, 'sentAt': new Date(), }
+          ]
+        }
+      }
+    }
+  );
 });
 
 module.exports = router;

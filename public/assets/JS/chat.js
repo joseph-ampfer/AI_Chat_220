@@ -1,6 +1,9 @@
 // Redirect if not logged in
 const JSON_BLOB_URL = localStorage.getItem("MyBlobURL");
 const USERNAME = localStorage.getItem("username");
+const USERID = '67fe7fe1914b5891b9b5f899'; // CHANGE LATER
+
+const AUTH_TOKEN = localStorage.getItem("authToken");
 
 if (!JSON_BLOB_URL || !USERNAME) {
   window.location.replace("login.html");
@@ -19,11 +22,25 @@ const modelBtn = document.querySelector("#modelSelect-btn");
 const imageInput = document.getElementById("imageUpload");
 const chatSection = document.getElementById("chat-section");
 const textModelsHTML = `
-        <li><a class="dropdown-item" href="#" >qwen-2.5-coder-32b</a></li>
-        <li><a class="dropdown-item" href="#" >llama-3.3-70b-versatile</a></li>
-        <li><a class="dropdown-item" href="#" >deepseek-r1-distill-qwen-32b</a></li>
-        <li><a class="dropdown-item" href="#" >gemma2-9b-it</a></li>
-        <li><a class="dropdown-item" href="#" >llama-3.2-90b-vision-preview</a></li>`;
+  <li><a class="dropdown-item" href="#" >gemma2-9b-it</a></li>
+  
+  <li><a class="dropdown-item" href="#" >llama-3.3-70b-versatile</a></li>
+  <li><a class="dropdown-item" href="#" >llama-3.1-8b-instant</a></li>
+  <li><a class="dropdown-item" href="#" >llama-guard-3-8b</a></li>
+  <li><a class="dropdown-item" href="#" >llama3-70b-8192</a></li>
+
+  <li><a class="dropdown-item" href="#" >deepseek-r1-distill-llama-70b</a></li>
+  <li><a class="dropdown-item" href="#" >meta-llama/llama-4-maverick-17b-128e-instruct</a></li>
+  <li><a class="dropdown-item" href="#" >meta-llama/llama-4-scout-17b-16e-instruct</a></li>`
+const textToImageModelsHTML = `
+  <li><a class="dropdown-item" href="#" >@cf/black-forest-labs/flux-1-schnell</a></li>
+  
+  <li><a class="dropdown-item" href="#" >@cf/runwayml/stable-diffusion-v1-5-inpainting</a></li>
+  <li><a class="dropdown-item" href="#" >@cf/bytedance/stable-diffusion-xl-lightning</a></li>
+  <li><a class="dropdown-item" href="#" >@cf/lykon/dreamshaper-8-lcm</a></li>
+  <li><a class="dropdown-item" href="#" >@cf/stabilityai/stable-diffusion-xl-base-1.0</a></li>
+  <li><a class="dropdown-item" href="#" >@cf/runwayml/stable-diffusion-v1-5-img2img</a></li>`
+const textToImageModels = ['@cf/black-forest-labs/flux-1-schnell', '@cf/runwayml/stable-diffusion-v1-5-inpainting', '@cf/bytedance/stable-diffusion-xl-lightning', '@cf/lykon/dreamshaper-8-lcm', '@cf/stabilityai/stable-diffusion-xl-base-1.0', '@cf/runwayml/stable-diffusion-v1-5-img2img'];
 
 // Global Variables
 let conversation = [];
@@ -33,6 +50,9 @@ let model = modelBtn.innerText.trim();
 let uploadedImageBase64 = null;
 let modelTracking = {};
 let selectedPublicChat = {};
+let chatId;
+let currentChatId;
+let uploadedFileId;
 
 // If a chat to view is in session storage, display it.
 // MOVED TO TOP FOR FASTER LOADING
@@ -47,15 +67,15 @@ if (publicChatConvo) {
 
 // Automatic scroll with response
 const observer = new MutationObserver(() => {
-  chatSection.scrollTop = chatSection.scrollHeight;
+  //chatSection.scrollTop = chatSection.scrollHeight; // Scroll to bottom
 });
 observer.observe(chatSection, { childList: true, subtree: true });
 
 // Handle Image Upload
 // Global variable to keep track of the last file name
 let lastFileName = "";
-
-imageInput.addEventListener("change", function (event) {
+// LISTEN FOR FILE SELECTED
+imageInput.addEventListener("change", async function (event) {
   console.log("Image input change event triggered.");
 
   const file = event.target.files[0];
@@ -99,21 +119,56 @@ imageInput.addEventListener("change", function (event) {
 
   // Read the file as a Data URL (base64 encoded)
   reader.readAsDataURL(file);
+
+  // 1) GET UPLOAD URL
+  const uploadResponse = await fetch('/api/files/getPostUrl', {
+    method: 'POST',
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ filename: file.name, contentType: file.type, filesize: file.size })
+  });
+  
+  const { uploadUrl, fileId } = await uploadResponse.json();
+
+  // 2) UPLOAD TO S3;
+  const uploadRes = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { "Content-Type": file.type },
+    body: file
+  });
+
+  if (!uploadRes.ok) {
+    console.error("Upload failed:", uploadRes.statusText);
+  } else {
+    console.log("Upload success, fileId = ", fileId);
+    uploadedFileId = fileId;
+  }
 });
 
 // Display Image Preview in Chat
 function displayImagePreview(imageBase64) {
   const imgDiv = document.createElement("div");
   imgDiv.classList.add("text-end", "mb-3");
-  imgDiv.innerHTML = `<img src="${imageBase64}" class="img-thumbnail" style="max-width: 200px;">`;
+  imgDiv.innerHTML = `<img src="${imageBase64}" class="img-thumbnail" >`;
   chatMessages.appendChild(imgDiv);
 }
 
 // Display generated image
-function displayGeneratedImage(imageBase64) {
+function displayGeneratedImage(imageBase64, model) {
   const imgDiv = document.createElement("div");
   imgDiv.classList.add("mb-3", "mx-auto");
   imgDiv.innerHTML = `<img src="${imageBase64}" class="img-fluid" style="max-width: 400px;">`;
+  
+
+  // Make div for model info
+  const bottomInfo = document.createElement("div");
+
+  // Make model text
+  const modelSpan = document.createElement("span");
+  modelSpan.classList.add("blockquote-footer");
+  modelSpan.innerText = model;
+  bottomInfo.appendChild(modelSpan);
+  imgDiv.appendChild(bottomInfo);
+
   chatMessages.appendChild(imgDiv);
 }
 
@@ -133,9 +188,14 @@ function newChat() {
   // Remove selected chat highlight
   document.querySelector(".selectedChat")?.classList.remove("selectedChat");
   // Make dropdown and model correct
-  modelBtn.innerText = "gemma2-9b-it";
+  if (textToImageModels.includes(model)) {
+    modelBtn.innerText = "gemma2-9b-it";
+    model = "gemma2-9b-it";
+  } else {
+    modelBtn.innerText = model;
+  }
   modelDropdown.innerHTML = textModelsHTML;
-  model = "gemma2-9b-it";
+  //model = "gemma2-9b-it";
   // Model select
   attachModelDropdownListeners();
 }
@@ -156,9 +216,10 @@ function newImageChat() {
   currentChatIndex = -1;
   // Remove selected chat highlight
   document.querySelector(".selectedChat")?.classList.remove("selectedChat");
-  modelBtn.innerText = "Image";
-  modelDropdown.innerHTML = "";
-  model = "image";
+  modelBtn.innerText = "@cf/black-forest-labs/flux-1-schnell";
+  modelDropdown.innerHTML = textToImageModelsHTML;
+  attachModelDropdownListeners();
+  model = "@cf/black-forest-labs/flux-1-schnell";
 }
 document
   .querySelector("#img-220-btn")
@@ -166,7 +227,7 @@ document
 
 // Helper: Fetch JSON from URL
 async function fetchJSON(url) {
-  const response = await fetch(url);
+  const response = await fetch(url, {headers:{Authorization: USERID} });
   if (!response.ok) throw new Error(`Fetch failed: ${response.statusText}`);
   return response.json();
 }
@@ -214,9 +275,9 @@ function appendMessage(message, isUser = true, model2 = "Unkown model") {
 }
 
 // Load chats for side bar
-async function loadSideBar() {
+async function loadSideBar(history) {
   // Group the chats, get result
-  const groupedChats = groupChatsByDate(blobData.chats);
+  const groupedChats = groupChatsByDate(history);
 
   // Order in which we want to display groups
   const sections = ["Today", "Yesterday", "Previous 7 Days", "Older"];
@@ -228,95 +289,21 @@ async function loadSideBar() {
   sections.forEach((section) => {
     if (groupedChats[section].length > 0) {
       // Create header label
-      let header = document.createElement("li");
+      const header = document.createElement("li");
       header.classList.add("list-group-item", "fw-bold", "bg-light");
       header.innerText = section;
       chatHistory.appendChild(header);
 
       // Append chats under the corresponding header
-      // Going backwards to assume higher index is more recent
-      for (let i = groupedChats[section].length - 1; i >= 0; i--) {
-        let title = groupedChats[section][i].chat.title;
-        let li = document.createElement("li");
-        li.classList.add(
-          "list-group-item",
-          "d-flex",
-          "justify-content-between"
-        );
-        li.dataset.index = groupedChats[section][i].index;
-
-        // Create a span to hold the chat title
-        let titleSpan = document.createElement("span");
-        titleSpan.innerText = title;
-        li.appendChild(titleSpan);
-
-        // When clicking the li (outside of the options), load the chat.
-        li.addEventListener("click", () =>
-          loadChatByIndex(groupedChats[section][i].index)
-        );
-
-        let chatOptionsWrapper = document.createElement("div");
-        chatOptionsWrapper.classList.add("chat-options-wrapper");
-        li.appendChild(chatOptionsWrapper);
-
-        let threeDotsBtn = document.createElement("button");
-        threeDotsBtn.classList.add("three-dots-btn");
-        threeDotsBtn.innerHTML = `<i class="bi bi-three-dots"></i>`;
-        chatOptionsWrapper.appendChild(threeDotsBtn);
-
-        let chatOptions = document.createElement("div");
-        chatOptions.classList.add("chat-options");
-        chatOptionsWrapper.appendChild(chatOptions);
-        let renameChatBtn = document.createElement("button");
-        renameChatBtn.classList.add(
-          "rename-chat",
-          "btn",
-          "d-flex",
-          "justify-content-between",
-          "text-end"
-        );
-        renameChatBtn.innerHTML = `<i class="bi bi-pencil me-3"></i><span>Rename</span>`;
-        chatOptions.appendChild(renameChatBtn);
-        let deleteChatBtn = document.createElement("button");
-        deleteChatBtn.classList.add(
-          "delete-chat",
-          "text-danger",
-          "btn",
-          "text-end"
-        );
-        deleteChatBtn.innerHTML = `<i class="bi bi-trash3 me-3"></i><span>Delete</span>`;
-        chatOptions.appendChild(deleteChatBtn);
-
-        // Three dots button toggles the popup
-        threeDotsBtn.addEventListener("click", function (event) {
-          event.stopPropagation();
-          chatOptions.classList.toggle("show");
-        });
-
-        // Delete button event listener
-        deleteChatBtn.addEventListener("click", function (event) {
-          event.stopPropagation();
-          li.remove();
-          deleteChatbyIndex(groupedChats[section][i].index);
-        });
-
-        // Rename button event listener
-        renameChatBtn.addEventListener("click", function (event) {
-          event.stopPropagation();
-          chatOptions.classList.remove("show"); // Hide popup
-
-          // Prompt user for new chat title. You can also create an inline input instead.
-          const newTitle = prompt("Enter new chat title:", titleSpan.innerText);
-          if (newTitle !== null && newTitle.trim() !== "") {
-            titleSpan.innerText = newTitle;
-            // Optionally update your groupedChats data structure or send to your backend
-            blobData.chats[groupedChats[section][i].index].title = newTitle;
-            updateJSONBlob(JSON_BLOB_URL, blobData);
-          }
-        });
-
+      // Going forwards, bc they come sorted
+      for (let i = 0; i < groupedChats[section].length; i++) {
+        const { title, _id } = groupedChats[section][i].chat;
+        
+        // Use helper
+        const li = createChatListItem({title:title, index:groupedChats[section][i].index, chatId:_id})
         chatHistory.appendChild(li);
       }
+      
     }
   });
 }
@@ -346,7 +333,7 @@ function groupChatsByDate(chats) {
   };
 
   chats.forEach((chat, index) => {
-    const chatTime = new Date(chat.timestamp).getTime() || 0;
+    const chatTime = new Date(chat.updatedAt).getTime() || 0;
 
     let group;
     if (chatTime >= todayStart) {
@@ -365,56 +352,123 @@ function groupChatsByDate(chats) {
   return grouped;
 }
 
-function loadChatByIndex(index) {
-  chatMessages.innerHTML = "";
-  const selectedChat = blobData.chats[index];
+async function loadChatByID(chatId) {
 
-  if (selectedChat && selectedChat.conversation) {
+  chatMessages.innerHTML = "";
+  const result = await fetch(`/api/chats/${chatId}`, {
+    headers: {
+      Authorization: USERID
+    }
+  });
+
+  if (!result.ok) {
+    alert('Error loading chat');
+  }
+
+  const chat = await result.json();
+
+  if (chat && chat.conversation) {
     // Check if image generator chat, change model select
-    if (selectedChat.isImageChat) {
-      modelBtn.innerText = "Image";
-      modelDropdown.innerHTML = "";
-      model = "image";
+    if (chat.isImageChat) {
+      modelBtn.innerText = "@cf/black-forest-labs/flux-1-schnell";
+      modelDropdown.innerHTML = textToImageModelsHTML;
+      model = "@cf/black-forest-labs/flux-1-schnell";
+      imageModel = true;
+      attachModelDropdownListeners();
     } else {
       modelBtn.innerText = "gemma2-9b-it";
       modelDropdown.innerHTML = textModelsHTML;
       attachModelDropdownListeners();
       model = "gemma2-9b-it";
     }
-
-    conversation = selectedChat.conversation;
-    modelTracking = selectedChat.modelTracking || {}; // Ensure modelTracking is an object
-
+  
+    conversation = chat.conversation;
+    currentChatId = chatId;
+    currentChatIndex = 5; // Change. Just signaling we're in an existing text chat
+ 
     // Display chat history with append message
     for (let i = 0; i < conversation.length; i++) {
       // If content is an array, assume image formatting and display the image
       if (Array.isArray(conversation[i].content)) {
         if (conversation[i].content.length > 1) {
           if (conversation[i].role == "user") {
-            displayImagePreview(conversation[i].content[1]?.image_url.url);
+            displayImagePreview(conversation[i].content[1]?.image_url?.url);
           } else {
-            displayGeneratedImage(conversation[i].content[1]?.image_url.url);
+            displayGeneratedImage(conversation[i].content[1]?.image_url?.url, conversation[i].model);
           }
         }
-        appendMessage(conversation[i].content[0].text);
+        // Ai gen images have no text in 'assistant' array, check before appending
+        if (conversation[i].content[0].text != "") {
+          appendMessage(conversation[i].content[0].text);
+        }
       } else {
         appendMessage(
           conversation[i].content,
           conversation[i].role == "user",
-          modelTracking[i]
+          conversation[i].model
         );
       }
     }
-    currentChatIndex = index;
+    //currentChatIndex = index;
     hljs.highlightAll();
-    console.log("Loaded chat by index:", currentChatIndex);
-    console.log(conversation);
+    console.log("Loaded chat by chatId:", chatId);
   }
   document.querySelector(".selectedChat")?.classList.remove("selectedChat");
   document
-    .querySelector(`[data-index="${currentChatIndex}"]`)
+    .querySelector(`[data-id="${chatId}"]`)
     .classList.add("selectedChat");
 }
+
+// function loadChatByIndex(index) {
+//   chatMessages.innerHTML = "";
+//   const selectedChat = blobData[index];
+
+//   if (selectedChat && selectedChat.conversation) {
+//     // Check if image generator chat, change model select
+//     if (selectedChat.isImageChat) {
+//       modelBtn.innerText = "Image";
+//       modelDropdown.innerHTML = "";
+//       model = "image";
+//     } else {
+//       modelBtn.innerText = "gemma2-9b-it";
+//       modelDropdown.innerHTML = textModelsHTML;
+//       attachModelDropdownListeners();
+//       model = "gemma2-9b-it";
+//     }
+
+//     conversation = selectedChat.conversation;
+//     modelTracking = selectedChat.modelTracking || {}; // Ensure modelTracking is an object
+
+//     // Display chat history with append message
+//     for (let i = 0; i < conversation.length; i++) {
+//       // If content is an array, assume image formatting and display the image
+//       if (Array.isArray(conversation[i].content)) {
+//         if (conversation[i].content.length > 1) {
+//           if (conversation[i].role == "user") {
+//             displayImagePreview(conversation[i].content[1]?.image_url.url);
+//           } else {
+//             displayGeneratedImage(conversation[i].content[1]?.image_url.url);
+//           }
+//         }
+//         appendMessage(conversation[i].content[0].text);
+//       } else {
+//         appendMessage(
+//           conversation[i].content,
+//           conversation[i].role == "user",
+//           modelTracking[i]
+//         );
+//       }
+//     }
+//     currentChatIndex = index;
+//     hljs.highlightAll();
+//     console.log("Loaded chat by index:", currentChatIndex);
+//     console.log(conversation);
+//   }
+//   document.querySelector(".selectedChat")?.classList.remove("selectedChat");
+//   document
+//     .querySelector(`[data-index="${currentChatIndex}"]`)
+//     .classList.add("selectedChat");
+// }
 
 function loadChatByChat(chat) {
   chatMessages.innerHTML = "";
@@ -424,9 +478,9 @@ function loadChatByChat(chat) {
   if (selectedChat && selectedChat.conversation) {
     // Check if image generator chat, change model select
     if (selectedChat.isImageChat) {
-      modelBtn.innerText = "Image";
+      modelBtn.innerText = "@cf/black-forest-labs/flux-1-schnell";
       modelDropdown.innerHTML = "";
-      model = "image";
+      model = "@cf/black-forest-labs/flux-1-schnell";
     } else {
       modelBtn.innerText = "gemma2-9b-it";
       modelDropdown.innerHTML = textModelsHTML;
@@ -468,16 +522,13 @@ function loadChatByChat(chat) {
 }
 
 // Load conversation history from jsonBlob
-async function loadChat() {
+async function loadChatHistory() {
   try {
-    blobData = await fetchJSON(JSON_BLOB_URL);
-    // Ensure blobData.chats exists; if not, you might initialize it
-    if (!blobData.chats) {
-      blobData.chats = [];
-    }
+    const history = await fetchJSON('/api/chats');
+    //console.log(history);
 
     // Load chat history (titles) into the aside
-    await loadSideBar();
+    await loadSideBar(history);
 
     // Optionally load the first chat automatically:
     //newChat();
@@ -486,62 +537,67 @@ async function loadChat() {
   }
 }
 
-function addToSidebar(title, index) {
-  //let title = groupedChats[section][i].chat.title;
-  let li = document.createElement("li");
+function addToSidebar(title, index, chatId) {
+  const li = createChatListItem({title:title, index:index, chatId:chatId});
+  chatHistory.prepend(li);
+}
+
+function createChatListItem({ title, index, chatId }) {
+  const li = document.createElement("li");
   li.classList.add("list-group-item", "d-flex", "justify-content-between");
   li.dataset.index = index;
+  li.dataset.id    = chatId;
 
-  // Create a span to hold the chat title
-  let titleSpan = document.createElement("span");
+  // Title
+  const titleSpan = document.createElement("div");
+  titleSpan.classList.add("chat-title");
   titleSpan.innerText = title;
   li.appendChild(titleSpan);
 
-  // When clicking the li (outside of the options), load the chat.
-  li.addEventListener("click", () => loadChatByIndex(index));
+  // Options wrapper
+  const wrapper = document.createElement("div");
+  wrapper.classList.add("chat-options-wrapper");
+  li.appendChild(wrapper);
 
-  let chatOptionsWrapper = document.createElement("div");
-  chatOptionsWrapper.classList.add("chat-options-wrapper");
-  li.appendChild(chatOptionsWrapper);
+  const threeDots = document.createElement("button");
+  threeDots.classList.add("three-dots-btn");
+  threeDots.innerHTML = `<i class="bi bi-three-dots"></i>`;
+  wrapper.appendChild(threeDots);
 
-  let threeDotsBtn = document.createElement("button");
-  threeDotsBtn.classList.add("three-dots-btn");
-  threeDotsBtn.innerHTML = `<i class="bi bi-three-dots"></i>`;
-  chatOptionsWrapper.appendChild(threeDotsBtn);
-
-  let chatOptions = document.createElement("div");
+  const chatOptions = document.createElement("div");
   chatOptions.classList.add("chat-options");
-  chatOptionsWrapper.appendChild(chatOptions);
-  let renameChatBtn = document.createElement("button");
-  renameChatBtn.classList.add(
-    "rename-chat",
-    "btn",
-    "d-flex",
-    "justify-content-between",
-    "text-end"
-  );
-  renameChatBtn.innerHTML = `<i class="bi bi-pencil me-3"></i><span>Rename</span>`;
-  chatOptions.appendChild(renameChatBtn);
-  let deleteChatBtn = document.createElement("button");
-  deleteChatBtn.classList.add("delete-chat", "text-danger", "btn", "text-end");
-  deleteChatBtn.innerHTML = `<i class="bi bi-trash3 me-3"></i><span>Delete</span>`;
-  chatOptions.appendChild(deleteChatBtn);
+  wrapper.appendChild(chatOptions);
 
+  const renameBtn = document.createElement("button");
+  renameBtn.classList.add("rename-chat", "btn", "d-flex", "justify-content-between", "text-end");
+  renameBtn.innerHTML = `<i class="bi bi-pencil me-3"></i><span>Rename</span>`;
+  chatOptions.appendChild(renameBtn);
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.classList.add("delete-chat", "text-danger", "btn", "text-end");
+  deleteBtn.innerHTML = `<i class="bi bi-trash3 me-3"></i><span>Delete</span>`;
+  chatOptions.appendChild(deleteBtn);
+
+  // Event listeners
+  
+  // When clicking the li (outside of the options), load the chat.
+  li.addEventListener("click", () => loadChatByID(chatId));
+  
   // Three dots button toggles the popup
-  threeDotsBtn.addEventListener("click", function (event) {
+  threeDots.addEventListener("click", function (event) {
     event.stopPropagation();
     chatOptions.classList.toggle("show");
   });
 
   // Delete button event listener
-  deleteChatBtn.addEventListener("click", function (event) {
+  deleteBtn.addEventListener("click", function (event) {
     event.stopPropagation();
-    li.remove();
-    deleteChatbyIndex(index);
+    li.remove(); // Remove from UI
+    deleteChatbyID(chatId);  // Remove from DB
   });
 
   // Rename button event listener
-  renameChatBtn.addEventListener("click", function (event) {
+  renameBtn.addEventListener("click", function (event) {
     event.stopPropagation();
     chatOptions.classList.remove("show"); // Hide popup
 
@@ -549,14 +605,13 @@ function addToSidebar(title, index) {
     const newTitle = prompt("Enter new chat title:", titleSpan.innerText);
     if (newTitle !== null && newTitle.trim() !== "") {
       titleSpan.innerText = newTitle;
-      // Optionally update your groupedChats data structure or send to your backend
-      blobData.chats[index].title = newTitle;
-      updateJSONBlob(JSON_BLOB_URL, blobData);
+      renameChatByID(chatId, newTitle);
     }
   });
 
-  chatHistory.prepend(li);
+  return li;
 }
+
 
 // Send user message and get bot response
 async function sendMessageToAI(message) {
@@ -565,24 +620,35 @@ async function sendMessageToAI(message) {
     if (currentChatIndex === -1) {
       chatMessages.innerHTML = "";
       // Create new chat entry with the first message as title
-      const title = message.split(" ").slice(0, 3).join(" ");
+      const title = message.split(" ").slice(0, 5).join(" ");
 
-      // add to blobData
-      blobData.chats.push({
-        title: title,
-        timestamp: "",
-        modelTracking: {},
-        conversation: [],
-        isImageChat: false,
+      // Create new chat and get chatId
+      const res = await fetch('/api/chats', {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: USERID,
+        },
+        body: JSON.stringify({ title: title }),
       });
 
-      // Set current index to the new chat
-      currentChatIndex = blobData.chats.length - 1;
+      if (!res.ok) {
+        const errorText = await response.text();
+        console.log(`Error ${response.status}: ${errorText}`)
+        throw new Error(`Error ${response.status}: ${errorText}`);
+      }
+
+      currentChatId = await res.json();
+      console.log(currentChatId);
+
+      // // Set current index to the new chat
+      // currentChatIndex = blobData.chats.length - 1;
+      currentChatIndex = 5; // ??? CHANGE
 
       // Add to sidebar
-      addToSidebar(title, currentChatIndex);
+      addToSidebar(title, currentChatIndex, currentChatId);
     } else if (currentChatIndex == -2) {
-      // Loaded message from index page
+      // Loaded message from home page !!!
       // Save public chat to end of your chats
       blobData.chats.push(selectedPublicChat);
 
@@ -601,18 +667,14 @@ async function sendMessageToAI(message) {
 
     let currentModel = model;
 
-    // Check if using image model
+    // Check if using vision model
     let messageContent;
-    if (currentModel == "llama-3.2-90b-vision-preview") {
+    if (currentModel == "meta-llama/llama-4-maverick-17b-128e-instruct" || currentModel == "meta-llama/llama-4-scout-17b-16e-instruct") {
       messageContent = [{ type: "text", text: message }];
       if (uploadedImageBase64) {
-        messageContent.push({
-          type: "image_url",
-          image_url: { url: uploadedImageBase64 },
-        });
         displayImagePreview(uploadedImageBase64);
         // Only one image per chat
-        imageInput.classList.add("d-none");
+        //imageInput.classList.add("d-none");
       }
     } else {
       messageContent = message;
@@ -620,21 +682,39 @@ async function sendMessageToAI(message) {
 
     // Display message
     appendMessage(message); // Display user message
+    
+    chatSection.scrollTop = chatSection.scrollHeight; // Scroll to bottom
 
     // Add message to conversation
     conversation.push({ role: "user", content: messageContent });
 
-    if (model == "image") {
+    if (textToImageModels.includes(model)) {
       await generateImage(message);
     } else {
+      // Display loader
+      const loader = document.createElement('p');
+      loader.classList.add('placeholder-glow');
+      const sp = document.createElement('span');
+      sp.classList.add('placeholder', 'text');
+      sp.style.width = "15%";
+      sp.innerText = "Loading...";
+      loader.appendChild(sp);
+      chatMessages.appendChild(loader);
+
+      const body = {
+        text: message,
+        model: currentModel
+      };
+      if (uploadedFileId) { body.fileId = uploadedFileId };
+      
       // Send request to ai api
-      const response = await fetch("api/chat", {
+      const response = await fetch(`api/chats/${currentChatId}/messages`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer <REPLACE-WITH-JWT>`,
+          Authorization: USERID,
         },
-        body: JSON.stringify({ messages: conversation, model: currentModel }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -643,22 +723,12 @@ async function sendMessageToAI(message) {
       }
 
       const botMessage = await response.text() ?? "No response.";
-      //===old==
-      // const resJson = await response.json();
-      // const botMessage =
-      //   resJson.choices?.[0]?.message?.content ?? "No response.";
-      //====
+
       appendMessage(botMessage, false, currentModel); // Display bot response
-      hljs.highlightAll(); // Highlight code
 
-      // Update conversation
-      conversation.push({ role: "assistant", content: botMessage });
+      loader.remove();
 
-      // Update modelTracking
-      modelTracking[conversation.length - 1] = currentModel;
-
-      // Update local blob and send to jsonBlob
-      await updateChatBlob();
+      hljs.highlightAll(); // Highlight code 
     }
   } catch (error) {
     console.error("Request failed:", error);
@@ -666,7 +736,8 @@ async function sendMessageToAI(message) {
   } finally {
     uploadedImageBase64 = null;
     imageInput.value = "";
-    chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to bottom
+    uploadedFileId = null;
+    //chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to bottom
   }
 }
 
@@ -724,7 +795,7 @@ chatForm.addEventListener("submit", (e) => {
 });
 
 // Load the chat on page load
-loadChat();
+loadChatHistory();
 
 // Audio transcription!!!!
 let isRecording = false;
@@ -750,8 +821,12 @@ let recordedChunks = [];
 async function startRecording() {
   try {
     // Request access to the microphone
-    audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
+    try {
+      audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // success!
+    } catch (err) {
+      console.error("Permission denied or no device:", err);
+    }
     // Create a MediaRecorder instance
     mediaRecorder = new MediaRecorder(audioStream);
 
@@ -773,11 +848,11 @@ async function startRecording() {
       formData.append("response_format", "json");
       formData.append("language", "en");
 
-      const response = await fetch('/api/transcriptions',
+      const response = await fetch('/api/chats/transcriptions',
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer <REPLACE-WITH-JWT>`,
+            Authorization: USERID,
             // Let the browser set the correct Content-Type header for FormData.
           },
           body: formData,
@@ -833,7 +908,7 @@ function blobToBase64(blob) {
 }
 
 // image generator
-async function generateImage(message, imageModel = "") {
+async function generateImage(message) {
   // Display placehoder the image in an <img> tag
   const placeholder = document.createElement("div");
   placeholder.classList.add(
@@ -852,62 +927,82 @@ async function generateImage(message, imageModel = "") {
           </div>`;
 
   chatMessages.appendChild(placeholder);
+  chatSection.scrollTop = chatSection.scrollHeight; // Scroll to bottom
 
-  const response = await fetch(`https://midterm.jampfer.workers.dev/`, {
+  console.log(model);
+  // Generate image from Cloudflare
+  const response = await fetch(`https://imagegen.jampfer.workers.dev/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt: message }),
+    body: JSON.stringify({ prompt: message, model: model }),
   });
 
   if (!response.ok) {
     placeholder.remove();
+    console.log("Error fetching image", response);
     throw new Error("Error fetching image:", response.statusText);
   }
 
   // Convert the binary response to a blob
   const blob = await response.blob();
 
-  // Create an object URL for the image
+  // // Create an object URL for the image
   const imageUrl = URL.createObjectURL(blob);
 
   // Display the image in an <img> tag
-  const img = document.createElement("img");
-  img.classList.add("img-fluid");
-  img.src = imageUrl;
-  img.alt = "Generate AI image";
-  placeholder.innerHTML = "";
-  placeholder.appendChild(img);
+  // const img = document.createElement("img");
+  // img.classList.add("img-fluid");
+  // img.src = imageUrl;
+  // img.alt = "Generated AI image";
+  // placeholder.innerHTML = "";
+  // placeholder.appendChild(img);
+  placeholder.remove();
+
+  displayGeneratedImage(imageUrl, model);
 
   // Convert the blob to a Base64 string
   const base64data = await blobToBase64(blob);
 
-  // Keeping same format i had before of user uploaded images
-  let messageContent = [
-    { type: "text", text: "" },
-    { type: "image_url", image_url: { url: base64data } },
-  ];
+  // Get presigned PUT
+  // 1) GET UPLOAD URL
+  const uploadResponse = await fetch('/api/files/getPostUrl', {
+    method: 'POST',
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ filename: "Generated_image.png", contentType: blob.type, filesize: blob.size })
+  });
+  
+  const { uploadUrl, fileId } = await uploadResponse.json();
 
-  // Update conversation
-  conversation.push({ role: "assistant", content: messageContent });
+  // 2) UPLOAD TO S3;
+  const uploadRes = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { "Content-Type": blob.type },
+    body: blob
+  });
 
-  // Update modelTracking
-  modelTracking[conversation.length - 1] = model;
+  if (!uploadRes.ok) {
+    console.error("Upload failed:", uploadRes.statusText);
+  } else {
+    console.log("Upload success, fileId = ", fileId);
+    uploadedFileId = fileId;
+  }
 
-  // Update local blob and send to jsonBlob
-  await updateChatBlob(true);
+  // Call api and store messages in Mongodb
+  const apiRes = await fetch(`api/chats/${currentChatId}/imageGen`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: USERID,
+    },
+    body: JSON.stringify({text: message, model: model, fileId: fileId}),
+  });
+
+  if (!apiRes.ok) {
+    const errorText = await apiRes.text();
+    throw new Error(`Error ${apiRes.status}: ${errorText}`);
+  }
+
 }
-
-// Adds metadata to blob and then updates jsonBlob
-async function updateChatBlob(isImageChat = false) {
-  const timestamp = Date.now();
-  blobData.chats[currentChatIndex].conversation = conversation;
-  blobData.chats[currentChatIndex].modelTracking = modelTracking;
-  blobData.chats[currentChatIndex].timestamp = timestamp;
-  blobData.chats[currentChatIndex].isImageChat = isImageChat;
-  await updateJSONBlob(JSON_BLOB_URL, blobData);
-}
-
-//generateImage("@cf/stabilityai/stable-diffusion-xl-base-1.0");
 
 // Post a chat function!!!! postChat
 document
@@ -930,7 +1025,7 @@ document
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer <REPLACE-WITH-JWT>`,
+          Authorization: USERID,
         },
         body: JSON.stringify({
           messages: conversation,
@@ -968,12 +1063,48 @@ document
     }
   });
 
+// // Deleting chats
+// async function deleteChatbyIndex(index) {
+//   // Splice out indexed chat
+//   blobData.chats.splice(index, 1);
+//   // Send to jsonblob
+//   updateJSONBlob(JSON_BLOB_URL, blobData);
+// }
+
 // Deleting chats
-async function deleteChatbyIndex(index) {
-  // Splice out indexed chat
-  blobData.chats.splice(index, 1);
-  // Send to jsonblob
-  updateJSONBlob(JSON_BLOB_URL, blobData);
+async function deleteChatbyID(chatId) {
+  const res = await fetch(`/api/chats/${chatId}/delete`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: USERID
+    }
+  });
+
+  if (!res.ok) {
+    throw new Error(`Error ${res.status}: ${res.text}`);
+  }
+  if (currentChatId == chatId) {
+    newChat();
+  }
+  console.log('chat deleted');
+}
+
+// Renaming chats
+async function renameChatByID(chatId, title) {
+  const res = await fetch(`/api/chats/${chatId}/rename`, {
+    method: 'PATCH',
+    headers: {
+      'Content-type': 'application/json',
+      Authorization: USERID
+    },
+    body: JSON.stringify({ title: title }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Error ${res.status}: ${res.text}`);
+  }
+
+  console.log('chat renamed');
 }
 
 // SELECTING A MODEL LISTENERS
@@ -982,7 +1113,7 @@ function attachModelDropdownListeners() {
     e.addEventListener("click", function () {
       modelBtn.innerText = e.innerText;
       model = e.innerText.trim();
-      if (model === "llama-3.2-90b-vision-preview") {
+      if (model === "meta-llama/llama-4-maverick-17b-128e-instruct" || model === "meta-llama/llama-4-scout-17b-16e-instruct") {
         imageInput.classList.remove("d-none");
       } else {
         imageInput.classList.add("d-none");

@@ -9,7 +9,7 @@ const router = express.Router();
 
 // mount each sub-router under a path
 router.use('/auth', auth);                // '/api/auth'
-router.use('/chat', chat);                // '/api/chat'
+router.use('/chats', chat);                // '/api/chat'
 router.use('/pagination', pagination);    // '/api/pagination'
 router.use('/files', files);              // '/api/files'
 router.use('/jsonBlob', jsonBlob);        // 'api/jsonBlob'

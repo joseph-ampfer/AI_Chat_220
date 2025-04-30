@@ -3,9 +3,8 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const app = express();
-const { MongoClient, ServerApiVersion } = require('mongodb');
-const uri = process.env.DATABASE_URI;
 const apiRoutes = require('./routes');
+const db = require('./db');
 
 
 // Middleware
@@ -42,15 +41,7 @@ app.use('/api', apiRoutes);
 
 // ======= TESTING DB Connection =======
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
-const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  }
-});
 
-const db = client.db('chat_220');
 
 // !TESTING! GET /mongodb
 app.get('/mongodb', async (req, res) => {

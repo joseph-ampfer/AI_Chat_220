@@ -59,7 +59,7 @@ body {
   background-color: rgb(219, 220, 255);
 }
 .selectedChat {
-  background-color: rgb(219, 220, 255);
+  background-color: rgb(219, 220, 255) !important;
 }
 pre {
   border-radius: 0.75rem;
@@ -74,6 +74,14 @@ pre {
   color: white;
   font-weight: 500;
 }
+.img-thumbnail {
+  max-width: 300px;
+}
+.chat-title {
+  -webkit-mask-image: linear-gradient(to right, black 60%, transparent 100%);
+  mask-image: linear-gradient(to right, black 60%, transparent 100%);
+  width: 100%;
+}
 .three-dots-btn {
   background: none;
   border: none;
@@ -86,6 +94,11 @@ pre {
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 100;
+  position: absolute;
+  top: 0;
+  right: 6px;
+  text-overflow: ellipsis;
 }
 .three-dots-btn:hover {
   color: black;
@@ -129,5 +142,8 @@ main.chat-area {
 .chat-messages {
   min-width: 0 !important;
 }
-
+.placeholder.text {
+  color: inherit !important;
+  background-color: transparent !important;
+}
    
