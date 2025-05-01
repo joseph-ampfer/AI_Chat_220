@@ -7,6 +7,12 @@ let searchResults = [];
 let posts = []; // array that will be used to store the public post data when called and will be used to display posts.
 let lastInput = ''; // string stored when a user is searching to handle unintentional fetching.
 
+/* Object to hold the current dataset.
+This will be updated as a user clicks 
+to a different page and also determines
+how many items are shown on one page. */
+let state = {querySet: [], page: 1, rows: 9, window: 5};
+
 /* Debounce function to handle delay for a user typing in the searchbar */
 const debounce = (callback, wait) => {
   let timeoutId = null;
@@ -15,14 +21,6 @@ const debounce = (callback, wait) => {
       callback(...args);
     }, wait);
   };
-};
-
-let state = { // Object to hold the current dataset. This will be updated as a user clicks to a different page and also determines how many items are shown on one page.
-  querySet: [],
-
-  page: 1,
-  rows: 9,
-  window: 5
 };
 
 document.getElementById("userSearch").addEventListener("keyup", debounce(searchBar, 475)); // listen for user to use search bar and then run the searchBar function.
@@ -190,17 +188,17 @@ function pageButtons(pages) {
   let maxRight = (state.page + Math.floor(state.window / 2)); // Determine the farthest right a user can go when going through pages.
 
   if (maxLeft < 1) {
-      maxLeft = 1;
-      maxRight = state.window;
+    maxLeft = 1;
+    maxRight = state.window;
   };
 
   if (maxRight > pages) {
-      maxLeft = pages - (state.window - 1);
-      
-      if (maxLeft < 1){
-        maxLeft = 1;
-      };
-      maxRight = pages;
+    maxLeft = pages - (state.window - 1);
+
+    if (maxLeft < 1) {
+      maxLeft = 1;
+    };
+    maxRight = pages;
   };
 
   /* This loop will display the number of pages of posts. */
