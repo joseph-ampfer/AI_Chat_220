@@ -2,7 +2,7 @@ const ALL_POSTS_URL = "/api/pagination"; // public link to the API Endpoint that
 const SEARCH_URL = "/api/search"; // public link to the API Endpoint that will query the database for search results.
 const divRow = document.getElementById("web-content"); // web content section. Used in multiple functions.
 const resultContainer = document.getElementById('result-container');
-let activeSearching = false; // Boolean value to determine if a user is actively searching or not.
+let currentData; // This is a temp variable that will use the current set of data that is being used.
 let searchResults = [];
 let posts = []; // array that will be used to store the public post data when called and will be used to display posts.
 let lastInput = ''; // string stored when a user is searching to handle unintentional fetching.
@@ -11,7 +11,7 @@ let lastInput = ''; // string stored when a user is searching to handle unintent
 This will be updated as a user clicks 
 to a different page and also determines
 how many items are shown on one page. */
-let state = {querySet: [], page: 1, rows: 9, window: 5};
+let state = { querySet: [], page: 1, rows: 9, window: 5 };
 
 /* Debounce function to handle delay for a user typing in the searchbar */
 const debounce = (callback, wait) => {
@@ -111,8 +111,8 @@ async function searchBar() {
       });
       state.page = 1; // Return the user back to page one if they start a new search.
       searchResults = await response.json(); // Store the returned results into the searchResults variable.
-      activeSearching = true; // User is searching, set this boolean to true.
-      renderPosts(searchResults); // load all of the posts using the filtered posts.
+      currentData = searchResults // User is searching, set this boolean to true.
+      renderPosts(currentData); // load all of the posts using the filtered posts.
     }
   } catch (err) {
     console.log('error with search', err);
@@ -127,8 +127,8 @@ async function searchBar() {
     window.scrollTo({ top: 0, behavior: "smooth" });
     sectionHeader.innerText = "Recent Chat Posts from our Users";
     paginationWrapper.style.display = "block";
-    activeSearching = false;
-    renderPosts(posts);
+    currentData = posts;
+    renderPosts(currentData);
   } else if (searchResults.length > 0) {
     // If there are search results, move the search bar and scroll screen to search results and change the header to 'Search Results'.
     searchBar.style.transition = "all 0.5s ease-in-out";
@@ -175,11 +175,7 @@ function pageButtons(pages) {
     // on click go to the previous page.
     if (state.page > 1) {
       state.page--;
-      if (!activeSearching) {
-        renderPosts(posts, true); // load the posts
-      } else {
-        renderPosts(searchResults, true);
-      }
+      renderPosts(currentData, true); // load the posts
     }
   });
   wrapper.appendChild(prevButton); // Add the previous button to the wrapper
@@ -216,11 +212,7 @@ function pageButtons(pages) {
     button.addEventListener("click", function () {
       // On click, go to the page of posts.
       state.page = parseInt(this.value); // load the next set of pages by changing the page in our state object to the current page.
-      if (!activeSearching) {
-        renderPosts(posts, true); // load the posts
-      } else {
-        renderPosts(searchResults, true);
-      }
+      renderPosts(currentData, true); // load the posts
     });
 
     wrapper.appendChild(button); // add this button to the wrapper
@@ -236,11 +228,7 @@ function pageButtons(pages) {
     if (state.page < pages) {
       // if current page is greater than the state.page, increase the page.
       state.page++;
-      if (!activeSearching) {
-        renderPosts(posts, true); // load the posts
-      } else {
-        renderPosts(searchResults, true);
-      }
+      renderPosts(currentData, true); // load the posts
     }
   });
   wrapper.appendChild(nextButton); // add the next button to the wrapper.
@@ -249,6 +237,7 @@ function pageButtons(pages) {
 /* Function to load all posts when the page opens */
 async function start() {
   posts = await fetchJSON(ALL_POSTS_URL);
+  currentData = posts;
   renderPosts(posts); // render the posts.
 };
 
