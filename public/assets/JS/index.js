@@ -102,8 +102,8 @@ async function searchBar() {
   let response;
   try {
     if (input) {
-      if(lastInput==input) return;
-      lastInput=input;
+      if (lastInput == input) return;
+      lastInput = input;
       response = await fetch(`/api/search/${input}`, {
         method: 'GET',
         headers: {
