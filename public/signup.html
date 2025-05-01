@@ -12,8 +12,8 @@
   </head>
   <body class="d-flex justify-content-center align-items-center vh-100">
     <div class="container">
-      <h1>Sign Up</h1>
       <form class="p-4 border rounded shadow bg-white">
+        <h1>Sign Up</h1>
         <div class="mb-3">
           <label for="exampleInputEmail1" class="form-label"
             >Email address</label
@@ -50,35 +50,39 @@
       crossorigin="anonymous"
     ></script>
     <script>
-      const usersBlobApi =
-        "https://jsonblob.com/api/jsonBlob/1344700602931929088";
-      async function getEmails() {
-        let response = await fetch(usersBlobApi, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        });
-        let usersArray = await response.json();
-        return usersArray;
+
+      async function checkEmailInUse(email) {
+        try {
+          const response = await fetch(`/api/auth/check-email?email=${email}`);
+          if (response.ok) {
+            const result = await response.json();
+            return result.exists;
+          }
+          else {
+            console.log('Error checking email');
+            return false;
+          }
+        }
+        catch(error) {
+          console.log('Error checking email:', error);
+          return false;
+        }
       }
 
       document
         .querySelector("#submit")
         .addEventListener("click", async function (event) {
           event.preventDefault();
-          let isUsernameAvailable = true;
-          let emailInput = document.querySelector("#exampleInputEmail1");
-          let newEmail = emailInput.value.trim();
-          let newPassword = document
-            .querySelector("#exampleInputPassword1")
-            .value.trim();
+          //let isUsernameAvailable = true;
+          const emailInput = document.querySelector("#exampleInputEmail1");
+          const passwordInput = document.querySelector("#exampleInputPassword1")
+          const email = emailInput.value.trim();
+          const password = passwordInput.value.trim();
           let alert = document.querySelector("#liveAlertPlaceholder");
 
           alert.innerHTML = "";
 
-          if (!newPassword || !newEmail) {
+          if (!email || !password) {
             alert.innerHTML = `<div class="alert alert-danger alert-dismissible" role="alert">
                            <div>Email and Password are required to create an account</div>
                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -94,15 +98,47 @@
             return;
           }
 
-          if (newPassword.length < 7 || !/\d/.test(newPassword)) {
+          if (password.length < 7 || !/\d/.test(password)) {
             alert.innerHTML = `<div class="alert alert-danger alert-dismissible" role="alert">
                            <div>Password must be 7 characters or more and have a number</div>
                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>`;
-            isUsernameAvailable = false;
+            //isUsernameAvailable = false;
             return;
           }
 
+          let emailInUse = await checkEmailInUse(email);
+          if (emailInUse) {
+            alert.innerHTML = `<div class="alert alert-danger alert-dismissible" role="alert">
+                           <div>This Email is already in use</div>
+                           <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>`;
+             return;
+          }
+
+          try {
+            const response = await fetch('/api/auth/signup', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({email, password})
+            });
+
+            if (response.ok) {
+              let smallUsername = newEmail.substring(0, newEmail.indexOf("@"));
+              localStorage.setItem("username", smallUsername);
+              window.location.replace('login.html');
+            }
+          }
+          catch(error) {
+            alert.innerHTML = `<div class="alert alert-danger alert-dismissible" role="alert">
+                           <div>There was an error</div>
+                           <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>`;
+          }
+
+          /*
           let users = await getEmails();
           for (let user of users) {
             if (newEmail == user.email) {
@@ -114,6 +150,8 @@
               return;
             }
           }
+          */
+         /*
           if (isUsernameAvailable) {
             let putRes = await fetch("https://jsonblob.com/api/jsonBlob", {
               method: "POST",
@@ -161,6 +199,7 @@
             //window.location.href = 'index.html'; //This is used to test going back and forth.
             window.location.replace("index.html");
           }
+          */
         });
     </script>
   </body>

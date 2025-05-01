@@ -49,6 +49,7 @@
       crossorigin="anonymous"
     ></script>
     <script>
+      /*
       const usersBlobApi =
         "https://jsonblob.com/api/jsonBlob/1344700602931929088";
       async function getEmails() {
@@ -62,7 +63,7 @@
         let usersArray = await response.json();
         return usersArray;
       }
-
+      */
       document
         .querySelector("#submit")
         .addEventListener("click", async function () {
@@ -84,10 +85,38 @@
             return;
           }
 
-          let users = await getEmails();
-          let isValidUser = false;
-          let userBlob = "";
+          try {
+            const response = await fetch('/api/auth/login', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({email: userEmail, password: userPassword})
+            });
 
+            const result = await response.json();
+
+            if (response.ok) {
+              localStorage.setItem('authToken', result.token);
+              let smallUsername = userEmail.substring(0, userEmail.indexOf("@"));
+              localStorage.setItem("username", smallUsername);
+              window.location.href = "index.html";
+            }
+            else {
+              alert.innerHTML = `<div class="alert alert-danger alert-dismissible" role="alert">
+                    <div>${result.error}</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+               </div>`;
+            }
+          }
+          catch(err) {
+            alert.innerHTML = `<div class="alert alert-danger alert-dismissible" role="alert">
+                    <div>There was an error logging in</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+               </div>`;
+          }
+        });
+          /*
           for (let user of users) {
             if (userEmail == user.email && userPassword == user.password) {
               isValidUser = true;
@@ -95,7 +124,7 @@
               break;
             }
           }
-
+  
           if (!isValidUser) {
             alert.innerHTML = `<div class="alert alert-danger alert-dismissible" role="alert">
                     <div>Incorrect email or password</div>
@@ -108,6 +137,7 @@
             window.location.href = "index.html";
           }
         });
+        */
     </script>
   </body>
 </html>
