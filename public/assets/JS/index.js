@@ -1,11 +1,13 @@
-const PUBLIC_BLOB_URL = "/api/pagination"; // public link to the API Endpoint that stores our post data.
+const ALL_POSTS_URL = "/api/pagination"; // public link to the API Endpoint that stores our post data.
 const SEARCH_URL = "/api/search"; // public link to the API Endpoint that will query the database for search results.
 const divRow = document.getElementById("web-content"); // web content section. Used in multiple functions.
 const resultContainer = document.getElementById('result-container');
 let activeSearching = false; // Boolean value to determine if a user is actively searching or not.
 let searchResults = [];
-let posts = []; // array that will be used to store the JSONBlob data when called and will be used to display posts.
+let posts = []; // array that will be used to store the public post data when called and will be used to display posts.
+let lastInput = ''; // string stored when a user is searching to handle unintentional fetching.
 
+/* Debounce function to handle delay for a user typing in the searchbar */
 const debounce = (callback, wait) => {
   let timeoutId = null;
   return (...args) => {
@@ -22,9 +24,9 @@ let state = { // Object to hold the current dataset. This will be updated as a u
   rows: 9,
 };
 
-document.getElementById("userSearch").addEventListener("keyup", debounce(searchBar, 300)); // listen for user to use search bar and then run the searchBar function.
+document.getElementById("userSearch").addEventListener("keyup", debounce(searchBar, 475)); // listen for user to use search bar and then run the searchBar function.
 
-/* Function to fetch the JSONBlob that holds the public posts and chats. */
+/* Function that reaches out to our API endpoint to fetch posts. */
 async function fetchJSON(url) {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Fetch failed: ${response.statusText}`);
@@ -32,10 +34,9 @@ async function fetchJSON(url) {
 }
 
 /* Function to load all of the posts to the page. scrollDown is used for when a user clicks the next page. */
-async function renderPosts(scrollDown = false) {
-  posts = await fetchJSON(PUBLIC_BLOB_URL);
+async function renderPosts(posts, scrollDown = false) {
 
-  state.querySet = posts; // set the querySet to our set of posts from JSONBlob
+  state.querySet = posts; // set the querySet to our set of posts
   let data = pagination(state.querySet, state.page, state.rows); // create the pages through the use of the pagination function.
   displayPosts(data.querySet); // display the posts that have been trimmed for the page
   pageButtons(data.pages); // create the page buttons
@@ -44,17 +45,7 @@ async function renderPosts(scrollDown = false) {
     divRow.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }
-async function renderSearchResults(searchResults, scrollDown = false) {
 
-  state.querySet = searchResults; // set the querySet to our set of posts from JSONBlob
-  let data = pagination(state.querySet, state.page, state.rows); // create the pages through the use of the pagination function.
-  displayPosts(data.querySet); // display the posts that have been trimmed for the page
-  pageButtons(data.pages); // create the page buttons
-
-  if (scrollDown) {
-    divRow.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-}
 
 /* This function displays all posts in an ordered way using bootstrap cards. */
 function displayPosts(filteredPosts) {
@@ -101,6 +92,7 @@ function displayPosts(filteredPosts) {
   }
 }
 
+
 /* This function handles the cases of the user using the search bar to find posts on the website. */
 async function searchBar() {
   let input = document.getElementById("userSearch").value.toLowerCase(); // search input that is then turned lowercase to filter.
@@ -110,6 +102,8 @@ async function searchBar() {
   let response;
   try {
     if (input) {
+      if(lastInput==input) return;
+      lastInput=input;
       response = await fetch(`/api/search/${input}`, {
         method: 'GET',
         headers: {
@@ -119,43 +113,34 @@ async function searchBar() {
       state.page = 1; // Return the user back to page one if they start a new search.
       searchResults = await response.json(); // Store the returned results into the searchResults variable.
       activeSearching = true; // User is searching, set this boolean to true.
-      renderSearchResults(searchResults); // load all of the posts using the filtered posts.
+      renderPosts(searchResults); // load all of the posts using the filtered posts.
     }
   } catch (err) {
     console.log('error with search', err);
   }
 
 
-
-
-
   /* These sets of conditionals deal with the animations based on user interaction with the searchbar. */
   if (input === "") {
     // If there is no input in the search bar, the search bar moves back to its original location and the header is changed back to show all recent posts.
-    //searchBar.style.marginTop = "0px";
     searchBar.classList.remove("sticky");
     searchBar.classList.add("start");
     window.scrollTo({ top: 0, behavior: "smooth" });
     sectionHeader.innerText = "Recent Chat Posts from our Users";
     paginationWrapper.style.display = "block";
     activeSearching = false;
-    renderPosts();
+    renderPosts(posts);
   } else if (searchResults.length > 0) {
     // If there are search results, move the search bar and scroll screen to search results and change the header to 'Search Results'.
     searchBar.style.transition = "all 0.5s ease-in-out";
     searchBar.classList.add("sticky");
     searchBar.classList.remove('start');
 
-    //searchBar.style.marginTop = "800px";
-
     const y = document.getElementById('searcharea').getBoundingClientRect().bottom + window.scrollY;
     window.scrollTo({ top: y, behavior: 'smooth' });
-
-    //resultContainer.scrollIntoView({ behavior: "smooth", block: "start" });
     sectionHeader.innerText = "Search Results";
   } else {
     // If there are no results, move search bar back to original position and scroll the screen to show the 'results not found' message.
-    //searchBar.style.marginTop = "0px";
     sectionHeader.innerText = "No Results Found :(";
     divRow.scrollIntoView({ behavior: "smooth", block: "start" });
     paginationWrapper.style.display = "none";
@@ -175,7 +160,8 @@ function pagination(querySet, page, rows) {
     querySet: trimmedData,
     pages: pages,
   };
-}
+};
+
 /* This function creates the page buttons in the pagination. */
 function pageButtons(pages) {
   let wrapper = document.getElementById("pagination-wrapper"); // Get the section where pagination will be displayed.
@@ -191,9 +177,9 @@ function pageButtons(pages) {
     if (state.page > 1) {
       state.page--;
       if (!activeSearching) {
-        renderPosts(true); // load the posts
+        renderPosts(posts, true); // load the posts
       } else {
-        renderSearchResults(searchResults, true);
+        renderPosts(searchResults, true);
       }
     }
   });
@@ -215,9 +201,9 @@ function pageButtons(pages) {
       // On click, go to the page of posts.
       state.page = parseInt(this.value); // load the next set of pages by changing the page in our state object to the current page.
       if (!activeSearching) {
-        renderPosts(true); // load the posts
+        renderPosts(posts, true); // load the posts
       } else {
-        renderSearchResults(searchResults, true);
+        renderPosts(searchResults, true);
       }
     });
 
@@ -235,16 +221,22 @@ function pageButtons(pages) {
       // if current page is greater than the state.page, increase the page.
       state.page++;
       if (!activeSearching) {
-        renderPosts(true); // load the posts
+        renderPosts(posts, true); // load the posts
       } else {
-        renderSearchResults(searchResults, true);
+        renderPosts(searchResults, true);
       }
     }
   });
   wrapper.appendChild(nextButton); // add the next button to the wrapper.
-}
+};
 
-renderPosts(); // load the posts as soon as someone accesses the page
+/* Function to load all posts when the page opens */
+async function start() {
+  posts = await fetchJSON(ALL_POSTS_URL);
+  renderPosts(posts); // render the posts.
+};
+
+start(); // load the posts when the user accesses the page
 
 /* This function creates the link to allow someone to view a public post. */
 function redirectAndLoadChat(chat) {
@@ -253,4 +245,4 @@ function redirectAndLoadChat(chat) {
   sessionStorage.setItem("selectedPublicChat", JSON.stringify(chat));
 
   window.location.href = "chat.html";
-}
+};
