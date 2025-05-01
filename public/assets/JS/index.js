@@ -22,6 +22,7 @@ let state = { // Object to hold the current dataset. This will be updated as a u
 
   page: 1,
   rows: 9,
+  window: 5
 };
 
 document.getElementById("userSearch").addEventListener("keyup", debounce(searchBar, 475)); // listen for user to use search bar and then run the searchBar function.
@@ -185,8 +186,25 @@ function pageButtons(pages) {
   });
   wrapper.appendChild(prevButton); // Add the previous button to the wrapper
 
+  let maxLeft = (state.page - Math.floor(state.window / 2)); // Determine the farthest left a user can go when going through pages.
+  let maxRight = (state.page + Math.floor(state.window / 2)); // Determine the farthest right a user can go when going through pages.
+
+  if (maxLeft < 1) {
+      maxLeft = 1;
+      maxRight = state.window;
+  };
+
+  if (maxRight > pages) {
+      maxLeft = pages - (state.window - 1);
+      
+      if (maxLeft < 1){
+        maxLeft = 1;
+      };
+      maxRight = pages;
+  };
+
   /* This loop will display the number of pages of posts. */
-  for (let page = 1; page <= pages; page++) {
+  for (let page = maxLeft; page <= maxRight; page++) {
     let button = document.createElement("button"); // Create page button
     button.value = page; // Set the value to a page
     button.classList.add("page", "btn", "btn-secondary"); // add style
