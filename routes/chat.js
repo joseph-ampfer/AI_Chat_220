@@ -15,6 +15,7 @@ const { callChatAPI } = require('../controllers/chatController');
 const { error } = require('console');
 const { title } = require('process');
 const { generateReadUrl } = require('../helpers/filesHelpers');
+const authorizeUser = require('../middleware/authorizeUser');
 
 
 // So we can define routes here
@@ -73,40 +74,9 @@ router.post('/test-chat', async (req, res) => {
   }
 });
 
-// const messageSchema = z.object({
-//   role: z.string(),
-//   content: z.string()
-// });
-
-// const chatRequestSchema = z.object({
-//   messages: z.array(messageSchema),
-//   model: z.string()
-// });
-
-// // POST '/api/chats/'
-// router.post('/', async (req, res) => {
-//   const parseResult = chatRequestSchema.safeParse(req.body);
-
-//   if (!parseResult.success) {
-//     return res.status(400).json({
-//       error: 'Invalid request payload',
-//       details: parseResult.error.errors,
-//     });
-//   }
-
-//   const { messages, model } = parseResult.data;
-
-//   try {
-//     const chatCompletion = await getGroqChatCompletion(messages, model);
-//     res.send(chatCompletion.choices[0]?.message?.content || "");
-//   } catch (err) {
-//     console.error('Chat error:', err.message);
-//     res.status(500).json({ error: 'Something went wrong' });
-//   }
-// });
 
 // POST /api/chats/transcriptions
-router.post('/transcriptions', upload.single('file'), async (req, res) => {
+router.post('/transcriptions', authorizeUser, upload.single('file'), async (req, res) => {
   console.log(req.body);
   if (!req.file) {
     console.error("No file uploaded");
@@ -139,7 +109,7 @@ router.post('/transcriptions', upload.single('file'), async (req, res) => {
 });
 
 // POST /api/summarize-chat
-router.post('/summarize-chat', async (req, res) => {
+router.post('/summarize-chat', authorizeUser, async (req, res) => {
   const messages = req.body.messages;
   const model = req.body.model;
 
@@ -183,14 +153,9 @@ const getChatSchema = z.object({
 // GET '/api/chats/
 // List chats (sidebar)
 const userid = z.string()
-router.get('/', async (req, res) => {
-  // Getting userId from header
-  const user = req.headers.authorization;
-  if (!ObjectId.isValid(user)) {
-    return res.status(400).json({ error: 'Invalid user' });
-  }
-  
-  const userId = new ObjectId(user);
+router.get('/', authorizeUser, async (req, res) => {
+  const userId = new ObjectId(req.user.id);
+
   const results = await db.collection('chats')
     .find({ userId: userId })
     .project({ _id: true, title: true, updatedAt: true, isImageChat: true })
@@ -201,17 +166,8 @@ router.get('/', async (req, res) => {
 
 // GET '/api/chats/:chatId
 // Get a single conversation
-router.get('/:chatId', async (req, res) => {
-  
-  // Getting userId from header
-  const user = req.headers.authorization;
-  // Check if authorized, 
-  // if not, send 400 unauthorized error
-
-  if (!ObjectId.isValid(user)) {
-    return res.status(400).send({ error: 'Invalid user' });
-  }
-  const userId = new ObjectId(user);
+router.get('/:chatId', authorizeUser, async (req, res) => {
+  const userId = new ObjectId(req.user.id);
 
   const { chatId } = req.params;
   const chat = await db.collection('chats').findOne({ _id: new ObjectId(chatId), userId: userId });
@@ -250,14 +206,8 @@ const messageScheme = z.object({
 
 // POST '/api/chats/:chatId/messages
 // Continue a convo (convo already exists), send chatId
-router.post('/:chatId/messages', async (req, res) => {
-
-  // Getting userId from header
-  const user = req.headers.authorization;
-  if (!ObjectId.isValid(user)) {
-    return res.status(400).json({ error: 'Invalid user' });
-  }
-  const userId = new ObjectId(user);
+router.post('/:chatId/messages', authorizeUser, async (req, res) => {
+  const userId = new ObjectId(req.user.id);
 
   const { chatId } = req.params;
   if (!ObjectId.isValid(chatId)) {
@@ -398,14 +348,8 @@ const newChatSchema = z.object({
 
 // Create a new chat, return its chatId 
 // POST '/api/chats
-router.post('/', async (req, res) => {
-
-  // Getting userId from header
-  const user = req.headers.authorization;
-  if (!ObjectId.isValid(user)) {
-    return res.status(400).json({ error: 'Invalid user' });
-  }
-  const userId = new ObjectId(user);
+router.post('/', authorizeUser, async (req, res) => {
+  const userId = new ObjectId(req.user.id);
 
   const parseResult =  newChatSchema.safeParse(req.body);
   if (!parseResult.success) {
@@ -429,14 +373,8 @@ router.post('/', async (req, res) => {
 });
 
 // DELETE /api/chats/${chatId}/delete
-router.delete('/:chatId/delete', async (req, res) => {
-
-  // Getting userId from header
-  const user = req.headers.authorization;
-  if (!ObjectId.isValid(user)) {
-    return res.status(400).json({ error: 'Invalid user' });
-  }
-  const userId = new ObjectId(user);
+router.delete('/:chatId/delete', authorizeUser, async (req, res) => {
+  const userId = new ObjectId(req.user.id);
 
   const { chatId } = req.params
 
@@ -448,14 +386,8 @@ router.delete('/:chatId/delete', async (req, res) => {
 
 
 // PATCH /api/chats/${chatId}/rename
-router.patch('/:chatId/rename', async (req, res) => {
-
-  // Getting userId from header
-  const user = req.headers.authorization;
-  if (!ObjectId.isValid(user)) {
-    return res.status(400).json({ error: 'Invalid user' });
-  }
-  const userId = new ObjectId(user);
+router.patch('/:chatId/rename', authorizeUser, async (req, res) => {
+  const userId = new ObjectId(req.user.id);
 
   const { chatId } = req.params
 
@@ -485,13 +417,8 @@ const imageGenRouteScheme = z.object({
 });
 
 // POST /api/chats/${chatId}/imageGen
-router.post('/:chatId/imageGen', async (req, res) => {
-  // Getting userId from header
-  const user = req.headers.authorization;
-  if (!ObjectId.isValid(user)) {
-    return res.status(400).json({ error: 'Invalid user' });
-  }
-  const userId = new ObjectId(user);
+router.post('/:chatId/imageGen', authorizeUser, async (req, res) => {
+  const userId = new ObjectId(req.user.id);
 
   const { chatId } = req.params;
   if (!ObjectId.isValid(chatId)) {

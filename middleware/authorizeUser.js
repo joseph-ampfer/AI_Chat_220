@@ -3,8 +3,11 @@ const jwt = require('jsonwebtoken');
 // Middleware to protect routes and authorize user based on JWT
 function authorizeUser(req, res, next) {
     // Extract token from the Authorization header
-    const token = req.headers['authorization']?.split(' ')[1]; // Format: "Bearer <token>"
-    
+    const authHeader = req.headers.authorization?.split(' ')[1]; // Format: "Bearer <token>"
+
+    // Pull the token from the cookie
+    const token = req.cookies.token;
+
     if (!token) {
         return res.status(401).json({ error: 'No token provided, unauthorized' });
     }
@@ -14,7 +17,8 @@ function authorizeUser(req, res, next) {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         
         // Attach the decoded user info to the request object for access in subsequent handlers
-        req.user.Id = decoded.userId;  // e.g., req.user.userId
+        req.user = {};
+        req.user.id = decoded.userId;  // e.g., req.user.userId
 
         // Proceed to the next middleware or route handler
         next();

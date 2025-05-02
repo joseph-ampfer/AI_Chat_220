@@ -5,9 +5,9 @@ const USERID = '67fe7fe1914b5891b9b5f899'; // CHANGE LATER
 
 const AUTH_TOKEN = localStorage.getItem("authToken");
 
-if (!JSON_BLOB_URL || !USERNAME) {
-  window.location.replace("login.html");
-}
+// if (!JSON_BLOB_URL || !USERNAME) {
+//   window.location.replace("login.html");
+// }
 
 // Constants
 const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
@@ -123,7 +123,7 @@ imageInput.addEventListener("change", async function (event) {
   // 1) GET UPLOAD URL
   const uploadResponse = await fetch('/api/files/getPostUrl', {
     method: 'POST',
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${AUTH_TOKEN}` },
     body: JSON.stringify({ filename: file.name, contentType: file.type, filesize: file.size })
   });
   
@@ -227,7 +227,7 @@ document
 
 // Helper: Fetch JSON from URL
 async function fetchJSON(url) {
-  const response = await fetch(url, {headers:{Authorization: USERID} });
+  const response = await fetch(url, {headers:{Authorization: `Bearer ${AUTH_TOKEN}`} });
   if (!response.ok) throw new Error(`Fetch failed: ${response.statusText}`);
   return response.json();
 }
@@ -357,7 +357,7 @@ async function loadChatByID(chatId) {
   chatMessages.innerHTML = "";
   const result = await fetch(`/api/chats/${chatId}`, {
     headers: {
-      Authorization: USERID
+      Authorization: `Bearer ${AUTH_TOKEN}`
     }
   });
 
@@ -524,7 +524,9 @@ function loadChatByChat(chat) {
 // Load conversation history from jsonBlob
 async function loadChatHistory() {
   try {
-    const history = await fetchJSON('/api/chats');
+    const history = await fetchJSON('/api/chats', {
+      headers: { Authorization: `Bearer ${AUTH_TOKEN}` }
+    });
     //console.log(history);
 
     // Load chat history (titles) into the aside
@@ -627,12 +629,13 @@ async function sendMessageToAI(message) {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
-          Authorization: USERID,
+          Authorization: `Bearer ${AUTH_TOKEN}`
         },
         body: JSON.stringify({ title: title }),
       });
 
       if (!res.ok) {
+        logInIfNeeded(res);
         const errorText = await response.text();
         console.log(`Error ${response.status}: ${errorText}`)
         throw new Error(`Error ${response.status}: ${errorText}`);
@@ -712,7 +715,7 @@ async function sendMessageToAI(message) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: USERID,
+          Authorization: `Bearer ${AUTH_TOKEN}`
         },
         body: JSON.stringify(body),
       });
@@ -852,7 +855,7 @@ async function startRecording() {
         {
           method: "POST",
           headers: {
-            Authorization: USERID,
+            Authorization: `Bearer ${AUTH_TOKEN}`
             // Let the browser set the correct Content-Type header for FormData.
           },
           body: formData,
@@ -933,7 +936,7 @@ async function generateImage(message) {
   // Generate image from Cloudflare
   const response = await fetch(`https://imagegen.jampfer.workers.dev/`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${AUTH_TOKEN}` },
     body: JSON.stringify({ prompt: message, model: model }),
   });
 
@@ -967,7 +970,7 @@ async function generateImage(message) {
   // 1) GET UPLOAD URL
   const uploadResponse = await fetch('/api/files/getPostUrl', {
     method: 'POST',
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${AUTH_TOKEN}` },
     body: JSON.stringify({ filename: "Generated_image.png", contentType: blob.type, filesize: blob.size })
   });
   
@@ -992,7 +995,7 @@ async function generateImage(message) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: USERID,
+      Authorization: `Bearer ${AUTH_TOKEN}`
     },
     body: JSON.stringify({text: message, model: model, fileId: fileId}),
   });
@@ -1025,7 +1028,7 @@ document
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: USERID,
+          Authorization: `Bearer ${AUTH_TOKEN}`
         },
         body: JSON.stringify({
           messages: conversation,
@@ -1076,7 +1079,7 @@ async function deleteChatbyID(chatId) {
   const res = await fetch(`/api/chats/${chatId}/delete`, {
     method: 'DELETE',
     headers: {
-      Authorization: USERID
+      Authorization: `Bearer ${AUTH_TOKEN}`
     }
   });
 
@@ -1095,7 +1098,7 @@ async function renameChatByID(chatId, title) {
     method: 'PATCH',
     headers: {
       'Content-type': 'application/json',
-      Authorization: USERID
+      Authorization: `Bearer ${AUTH_TOKEN}`
     },
     body: JSON.stringify({ title: title }),
   });
@@ -1120,4 +1123,14 @@ function attachModelDropdownListeners() {
       }
     });
   });
+}
+
+// Helper
+function logInIfNeeded(res) {
+  if (res.status === 401) {
+    if (confirm('Please log in to chat. Go to login page?')) {
+      window.location.href = '/login';
+    }
+    return;
+  }
 }

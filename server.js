@@ -1,15 +1,17 @@
 require('dotenv').config();
 const express = require('express');
-const bcrypt = require('bcrypt')
 const path = require('path');
 const fs = require('fs');
 const app = express();
 const apiRoutes = require('./routes');
 const db = require('./db');
+const cookieParser = require('cookie-parser');
 
 
 // Middleware
-app.use(express.json());
+app.use(cookieParser());
+app.use(express.json()); // Parses application/json 
+app.use(express.urlencoded({ extended: true })); // Parses application/x-www-form-urlencoded
 
 // Static public files
 app.use(express.static('public'));
