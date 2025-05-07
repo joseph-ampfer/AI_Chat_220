@@ -143,3 +143,7 @@ Content-Type: application/json
 {
   "text": "The image depicts a blue, pixelated illustration of a dolphin. The dolphin is viewed from the side, facing to the right. It has a large dorsal fin on its back and a long, curved tail. The dolphin's body is a solid blue color, with no visible details or shading. The background of the image is white. The overall effect is one of simplicity and boldness, with the bright blue color of the dolphin standing out against the plain white background."
 }
+
+
+### Pagination
+GET http://localhost:3030/api/pagination
