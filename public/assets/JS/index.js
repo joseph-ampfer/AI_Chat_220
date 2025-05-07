@@ -80,9 +80,9 @@ function displayPosts(filteredPosts) {
     cardData.appendChild(cardText);
 
     let cardLink = document.createElement("a");
-    cardLink.setAttribute("href", "#");
+    cardLink.setAttribute("href", `chat?chatId=${post._id}`);
     cardLink.dataset.index = i;
-    cardLink.addEventListener("click", () => redirectAndLoadChat(post.chat));
+    // cardLink.addEventListener("click", () => redirectAndLoadChat(post.chat));
     cardLink.classList.add("card-link");
     cardLink.innerText = "Check out this Conversation";
     cardData.appendChild(cardLink);

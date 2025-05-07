@@ -147,3 +147,7 @@ Content-Type: application/json
 
 ### Pagination
 GET http://localhost:3030/api/pagination
+
+
+### POST chat with summary
+POST

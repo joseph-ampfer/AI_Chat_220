@@ -17,6 +17,7 @@ const { title } = require('process');
 const { generateReadUrl } = require('../helpers/filesHelpers');
 const authorizeUser = require('../middleware/authorizeUser');
 const fs = require('fs');
+const { fetchTextOnlyConversation } = require('../services/chatServices');
 
 
 // So we can define routes here
@@ -48,7 +49,34 @@ async function getGroqChatCompletion(messages, model) {
   });
 }
 
+// Returns a summary
+async function summarizeConversation(conversation, model) {
+  const systemPrompt = {
+    role: "system",
+    content: `
+    You are an assistant that summarizes chats into JSON objects like they would appear in reddit. A title that is a question, and a detail that is a 30 word summary. Always respond with valid JSON objects that match this structure:
+    {
+      "chat_summary": {
+        "title": "string",
+        "summary": "string"
+      }
+    }
+    Your response should ONLY contain the JSON object and nothing else.`,
+  };
 
+  // Make new convo with system prompt at the beginning
+  const convoWithSystemPrompt = [systemPrompt, ...conversation];
+  console.log(convoWithSystemPrompt);
+  console.log("llama-3.3-70b-versatile");
+
+  // Summarize
+  return await groq.chat.completions.create({
+    messages: convoWithSystemPrompt,
+    model: "llama-3.3-70b-versatile",
+    response_format: { type: "json_object" } // IMPORTANT! will throw if not proper JSON
+  });
+
+}
 
 // POST /api/chats/test-chat
 router.post('/test-chat', async (req, res) => {
@@ -131,35 +159,46 @@ router.post('/tts', async (req, res) => {
   res.json("success");
 });
 
-// POST /api/summarize-chat
-router.post('/summarize-chat', authorizeUser, async (req, res) => {
-  const messages = req.body.messages;
-  const model = req.body.model;
+// POST /api/chats/:chatId/post-public?autoSummarize=true
+router.post('/:chatId/post-public', authorizeUser, async (req, res) => {
+  const userId = new ObjectId(req.user.id);
+  const { model, username } = req.body;
+  const { chatId } = req.params;
 
-  let systemPrompt = {
-    role: "system",
-    content: `You an assistant that summarizes chats in JSON like they would appear in reddit. A title that is a question, and a detail that is a 30 word summary. The JSON schema should include
-          {
-            "chat_summary": {
-              "title": "string (as a question)",
-              "summary": "string (about 30 words)"
-            }
-          }`,
-  };
-
-  // Make new convo with system prompt at the beginning
-  let convoWithSystemPrompt = [systemPrompt, ...messages];
+  // Get conversation by id to send to summarizer
+  // Not vision model, deconstruct all content: [] to content: "string"
+  const conversation = await fetchTextOnlyConversation(chatId, userId);
+  if (!conversation.length) {
+    return res.status(404).json({ error: "Chat not found" });
+  }  
 
   try {
-    const completion = await groq.chat.completions.create({
-      messages: convoWithSystemPrompt,
-      model: model,
-      response_format: { type: "json_object" }
-    });
-      
+    // Summarize
+    const completion = await summarizeConversation(conversation, model);
+
+    // Got the summary
     const summary = completion.choices?.[0]?.message?.content;
     console.log(summary);
-    res.json(summary);
+    const jsonSummary = JSON.parse(summary);
+
+    // Get the original chat?
+    const chat = await db.collection('chats').findOne({ _id: new ObjectId(chatId), userId: userId });
+    const user = await db.collection('users').findOne({ _id: userId }, { projection: { username: 1, email: 1 } });
+
+    // Post original chat and summary to publicChats
+    const insertRes = await db.collection('publicChats').insertOne({
+      username: user?.email?.split('@')[0], /// ????
+      userId: userId,
+      createdAt: new Date(),
+      chat_summary: jsonSummary.chat_summary,
+      conversation: chat.conversation,
+      isImageChat: chat.isImageChat
+    });
+
+    res.json({
+      chat_summary: jsonSummary.chat_summary,
+      url: `/chats?chatId=${insertRes.insertedId}`
+    });
 
   } catch (err) {
     console.error('Chat error:', err.message);
@@ -188,13 +227,54 @@ router.get('/', authorizeUser, async (req, res) => {
 
 
 // GET '/api/chats/:chatId
-// Get a single conversation
+// Get a single conversation from user
 router.get('/:chatId', authorizeUser, async (req, res) => {
   const userId = new ObjectId(req.user.id);
 
   const { chatId } = req.params;
   const chat = await db.collection('chats').findOne({ _id: new ObjectId(chatId), userId: userId });
   
+  // Walk through each message and generate url for images, parallel bc of async
+  const promises = chat.conversation.map(async message => {
+    const fileId = message.content?.[1]?.image_url?.key;
+    if (!fileId) return;
+
+    const url = await generateReadUrl(message.content[1].image_url.key);
+    message.content[1].image_url = { url: url };
+  });
+
+  await Promise.all(promises);
+
+  if (!chat) return res.status(404).send({ error: 'Chat not found' });
+  res.json(chat);
+});
+
+// GET '/api/chats/:chatId/public
+// anyone can view...
+router.get('/:chatId/public', async (req, res) => {
+  const { chatId } = req.params;
+  const chat = await db.collection('publicChats').findOne({ _id: new ObjectId(chatId) });
+
+  // Walk through each message and generate url for images, parallel bc of async
+  const promises = chat.conversation.map(async message => {
+    const fileId = message.content?.[1]?.image_url?.key;
+    if (!fileId) return;
+
+    const url = await generateReadUrl(message.content[1].image_url.key);
+    message.content[1].image_url = { url: url };
+  });
+
+  await Promise.all(promises);
+
+  if (!chat) return res.status(404).send({ error: 'Chat not found' });
+  res.json(chat);
+});
+
+// GET '/api/chats/:chatId/public
+router.get('/:chatId/public', async (req, res) => {
+  const { chatId } = req.params;
+  const chat = await db.collection('publicChats').findOne({ _id: new ObjectId(chatId) });
+
   // Walk through each message and generate url for images, parallel bc of async
   const promises = chat.conversation.map(async message => {
     const fileId = message.content?.[1]?.image_url?.key;
@@ -279,48 +359,7 @@ router.post('/:chatId/messages', authorizeUser, async (req, res) => {
   );
 
 
-  // This junk is to allow vision models and txt models to overlap
-  // Getting only text for txt models, the imageurls for image models
-  const pipline = [
-    { $match: { _id: new ObjectId(chatId), userId: userId } },
-    {
-      $project: {
-        _id: false,
-        conversation: {
-          $map: {
-            input: "$conversation",
-            as: "msg",
-            in: {
-              role: "$$msg.role",
-              content: {
-                $cond: [
-                  { $isArray: "$$msg.content" },
-                  // If it’s an array, find the text block and extract its `.text`
-                  {
-                    $first: {
-                      $map: {
-                        input: {
-                          $filter: {
-                            input: "$$msg.content",
-                            as:    "blk",
-                            cond:  { $eq: [ "$$blk.type", "text" ] }
-                          }
-                        },
-                        as:    "t",
-                        in:    "$$t.text"
-                      }
-                    }
-                  },
-                  "$$msg.content"
-                ]
-              }
-            }
-          }
-        }
-    }}
-  ];
-
-  // Use pipline to get clean text only conversation, if txt model
+  // Use pipeline to get clean text only conversation, if txt model
   let conversation
 
   if (capablity.vision) {
@@ -343,8 +382,7 @@ router.post('/:chatId/messages', authorizeUser, async (req, res) => {
     
   } else {
     // Not vision model, deconstruct all content: [] to content: "string"
-    const chatArr = await db.collection('chats').aggregate(pipline).toArray();
-    conversation = chatArr[0].conversation;
+    conversation = await fetchTextOnlyConversation(chatId, userId);
   }
   let aiResponse = "";
   let usage;
@@ -404,7 +442,24 @@ router.post('/', authorizeUser, async (req, res) => {
     userId: userId, title: title, createdAt: now, updatedAt: now, isImageChat: false, conversation: []
   });
 
-  res.status(201).json(insertedId)
+  res.status(201).json(insertedId);
+
+});
+
+// Create a new chat, return its chatId 
+// POST '/api/chats/continue-public-convo
+router.post('/continue-public-convo', authorizeUser, async (req, res) => {
+  const userId = new ObjectId(req.user.id);
+  const { chat } = req.body;
+
+  const now = new Date();
+
+  // Insert new document
+  const { insertedId } = await db.collection('chats').insertOne({
+    userId: userId, title: chat.chat_summary.title, createdAt: now, updatedAt: now, isImageChat: chat.isImageChat, conversation: chat.conversation
+  });
+
+  res.status(201).json(insertedId);
 
 });
 

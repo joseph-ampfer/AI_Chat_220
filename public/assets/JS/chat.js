@@ -1,7 +1,6 @@
 // Redirect if not logged in
 const JSON_BLOB_URL = localStorage.getItem("MyBlobURL");
 const USERNAME = localStorage.getItem("username");
-const USERID = '67fe7fe1914b5891b9b5f899'; // CHANGE LATER
 
 const AUTH_TOKEN = localStorage.getItem("authToken");
 
@@ -119,6 +118,8 @@ let selectedPublicChat = {};
 let chatId;
 let currentChatId;
 let uploadedFileId;
+let isImageChat;
+let publicChat
 
 const { Marked } = globalThis.marked;
 const { markedHighlight } = globalThis.markedHighlight;
@@ -134,15 +135,18 @@ const marked = new Marked(
   })
 );
 
-// If a chat to view is in session storage, display it.
+// If a chat to view is in query parameter, display it.
 // MOVED TO TOP FOR FASTER LOADING
-let publicChatConvo = sessionStorage.getItem("selectedPublicChat");
-console.log(publicChatConvo);
-if (publicChatConvo) {
-  chatMessages.innerHTML = `<div class="spinner-border " role="status">
-            <span class="visually-hidden">Loading...</span>
-          </div>`;
-  loadChatByChat(JSON.parse(publicChatConvo));
+const params = new URLSearchParams(window.location.search);
+if (params.get('chatId')) {
+  chatMessages.innerHTML = `
+  <div class="d-flex justify-content-center align-items-center h-100" >
+    <div class="spinner-border " role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>`;
+  console.log('chatId: ', params.get('chatId'));
+  loadPublicChatById(params.get('chatId'));
 }
 
 // Automatic scroll with response
@@ -285,6 +289,8 @@ function newChat() {
   // Model select
   attachModelDropdownListeners();
 
+  clearQueryString();
+
   imageInput.classList.add("d-none");
   imageInputLabel.classList.add("d-none");
 }
@@ -309,6 +315,8 @@ function newImageChat() {
   modelDropdown.innerHTML = textToImageModelsHTML;
   attachModelDropdownListeners();
   model = "@cf/black-forest-labs/flux-1-schnell";
+
+  clearQueryString();
 }
 // document
 //   .querySelector("#img-220-btn")
@@ -484,6 +492,79 @@ function groupChatsByDate(chats) {
   return grouped;
 }
 
+async function loadPublicChatById(chatId) {
+
+  chatMessages.innerHTML = "";
+  const result = await fetch(`/api/chats/${chatId}/public`, {
+    headers: {
+      Authorization: `Bearer ${AUTH_TOKEN}`
+    }
+  });
+
+  if (!result.ok) {
+    alert('Error loading chat');
+  }
+
+  const chat = await result.json();
+
+  isImageChat = chat.isImageChat;
+
+  if (chat && chat.conversation) {
+    // Check if image generator chat, change model select
+    if (chat.isImageChat) {
+      modelBtn.innerText = "@cf/black-forest-labs/flux-1-schnell";
+      modelDropdown.innerHTML = textToImageModelsHTML;
+      model = "@cf/black-forest-labs/flux-1-schnell";
+      imageModel = true;
+      attachModelDropdownListeners();
+    } else {
+      modelBtn.innerText = "gemma2-9b-it";
+      modelDropdown.innerHTML = textModelsHTML;
+      attachModelDropdownListeners();
+      model = "gemma2-9b-it";
+    }
+
+    imageInput.classList.add("d-none");
+    imageInputLabel.classList.add("d-none");
+  
+    conversation = chat.conversation;
+    publicChat = chat;
+    currentChatId = -2; // Change. viewing public
+    currentChatIndex = -2; // Change. Just signaling we're viewing public
+ 
+    // Display chat history with append message
+    for (let i = 0; i < conversation.length; i++) {
+      // If content is an array, assume image formatting and display the image
+      if (Array.isArray(conversation[i].content)) {
+        if (conversation[i].content.length > 1) {
+          if (conversation[i].role == "user") {
+            displayImagePreview(conversation[i].content[1]?.image_url?.url);
+          } else {
+            displayGeneratedImage(conversation[i].content[1]?.image_url?.url, conversation[i].model);
+          }
+        }
+        // Ai gen images have no text in 'assistant' array, check before appending
+        if (conversation[i].content[0].text != "") {
+          appendMessage(conversation[i].content[0].text);
+        }
+      } else {
+        appendMessage(
+          conversation[i].content,
+          conversation[i].role == "user",
+          conversation[i].model
+        );
+      }
+    }
+    //currentChatIndex = index;
+    //hljs.highlightAll();
+    console.log("Loaded public chat by chatId:", chatId);
+  }
+  // document.querySelector(".selectedChat")?.classList.remove("selectedChat");
+  // document
+  //   .querySelector(`[data-id="${chatId}"]`)
+  //   .classList.add("selectedChat");
+}
+
 async function loadChatByID(chatId) {
 
   chatMessages.innerHTML = "";
@@ -498,6 +579,8 @@ async function loadChatByID(chatId) {
   }
 
   const chat = await result.json();
+
+  isImageChat = chat.isImageChat;
 
   if (chat && chat.conversation) {
     // Check if image generator chat, change model select
@@ -546,6 +629,7 @@ async function loadChatByID(chatId) {
     }
     //currentChatIndex = index;
     //hljs.highlightAll();
+    clearQueryString();
     console.log("Loaded chat by chatId:", chatId);
   }
   document.querySelector(".selectedChat")?.classList.remove("selectedChat");
@@ -554,109 +638,8 @@ async function loadChatByID(chatId) {
     .classList.add("selectedChat");
 }
 
-// function loadChatByIndex(index) {
-//   chatMessages.innerHTML = "";
-//   const selectedChat = blobData[index];
 
-//   if (selectedChat && selectedChat.conversation) {
-//     // Check if image generator chat, change model select
-//     if (selectedChat.isImageChat) {
-//       modelBtn.innerText = "Image";
-//       modelDropdown.innerHTML = "";
-//       model = "image";
-//     } else {
-//       modelBtn.innerText = "gemma2-9b-it";
-//       modelDropdown.innerHTML = textModelsHTML;
-//       attachModelDropdownListeners();
-//       model = "gemma2-9b-it";
-//     }
-
-//     conversation = selectedChat.conversation;
-//     modelTracking = selectedChat.modelTracking || {}; // Ensure modelTracking is an object
-
-//     // Display chat history with append message
-//     for (let i = 0; i < conversation.length; i++) {
-//       // If content is an array, assume image formatting and display the image
-//       if (Array.isArray(conversation[i].content)) {
-//         if (conversation[i].content.length > 1) {
-//           if (conversation[i].role == "user") {
-//             displayImagePreview(conversation[i].content[1]?.image_url.url);
-//           } else {
-//             displayGeneratedImage(conversation[i].content[1]?.image_url.url);
-//           }
-//         }
-//         appendMessage(conversation[i].content[0].text);
-//       } else {
-//         appendMessage(
-//           conversation[i].content,
-//           conversation[i].role == "user",
-//           modelTracking[i]
-//         );
-//       }
-//     }
-//     currentChatIndex = index;
-//     hljs.highlightAll();
-//     console.log("Loaded chat by index:", currentChatIndex);
-//     console.log(conversation);
-//   }
-//   document.querySelector(".selectedChat")?.classList.remove("selectedChat");
-//   document
-//     .querySelector(`[data-index="${currentChatIndex}"]`)
-//     .classList.add("selectedChat");
-// }
-
-function loadChatByChat(chat) {
-  chatMessages.innerHTML = "";
-  selectedPublicChat = chat;
-  const selectedChat = chat;
-
-  if (selectedChat && selectedChat.conversation) {
-    // Check if image generator chat, change model select
-    if (selectedChat.isImageChat) {
-      modelBtn.innerText = "@cf/black-forest-labs/flux-1-schnell";
-      modelDropdown.innerHTML = "";
-      model = "@cf/black-forest-labs/flux-1-schnell";
-    } else {
-      modelBtn.innerText = "gemma2-9b-it";
-      modelDropdown.innerHTML = textModelsHTML;
-      model = "gemma2-9b-it";
-    }
-
-    conversation = selectedChat.conversation;
-    modelTracking = selectedChat.modelTracking || {}; // Ensure modelTracking is an object
-
-    // Display chat history with append message
-    for (let i = 0; i < conversation.length; i++) {
-      // If content is an array, assume image formatting and display the image
-      if (Array.isArray(conversation[i].content)) {
-        if (conversation[i].content.length > 1) {
-          if (conversation[i].role == "user") {
-            displayImagePreview(conversation[i].content[1]?.image_url.url);
-          } else {
-            displayGeneratedImage(conversation[i].content[1]?.image_url.url);
-          }
-        }
-        appendMessage(conversation[i].content[0].text);
-      } else {
-        appendMessage(
-          conversation[i].content,
-          conversation[i].role == "user",
-          modelTracking[i]
-        );
-      }
-    }
-    currentChatIndex = -2;
-    hljs.highlightAll();
-    console.log("Loaded chat by chat:", currentChatIndex);
-    console.log(conversation);
-  }
-  // Remove selected chat from session storage
-  sessionStorage.removeItem("selectedPublicChat");
-  // document.querySelector('.selectedChat')?.classList.remove('selectedChat');
-  // document.querySelector(`[data-index="${currentChatIndex}"]`).classList.add('selectedChat');
-}
-
-// Load conversation history from jsonBlob
+// Load conversation history
 async function loadChatHistory() {
   try {
     const history = await fetchJSON('/api/chats', {
@@ -674,16 +657,17 @@ async function loadChatHistory() {
   }
 }
 
-function addToSidebar(title, index, chatId) {
+function addToSidebar(title, index, chatId, markSelected=false) {
   chatHistory.forEach(body => {
-    const li = createChatListItem({title:title, index:index, chatId:chatId});
+    const li = createChatListItem({title:title, index:index, chatId:chatId, markSelected:markSelected});
     body.prepend(li);
   });
 }
 
-function createChatListItem({ title, index, chatId }) {
+function createChatListItem({ title, index, chatId, markSelected}) {
   const li = document.createElement("li");
   li.classList.add("list-group-item", "d-flex", "justify-content-between");
+  markSelected && li.classList.add("selectedChat");
   li.dataset.index = index;
   li.dataset.id    = chatId;
 
@@ -786,23 +770,34 @@ async function sendMessageToAI(message) {
       currentChatIndex = 5; // ??? CHANGE
 
       // Add to sidebar
-      addToSidebar(title, currentChatIndex, currentChatId);
+      addToSidebar(title, currentChatIndex, currentChatId, true);
     } else if (currentChatIndex == -2) {
       // Loaded message from home page !!!
-      // Save public chat to end of your chats
-      blobData.chats.push(selectedPublicChat);
+      const res = await fetch('/api/chats/continue-public-convo', {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${AUTH_TOKEN}`
+        },
+        body: JSON.stringify({ chat: publicChat }),
+      });
 
-      // Set current index to the new chat
-      currentChatIndex = blobData.chats.length - 1;
+      if (!res.ok) {
+        logInIfNeeded(res);
+        const errorText = await response.text();
+        console.log(`Error ${response.status}: ${errorText}`)
+        throw new Error(`Error ${response.status}: ${errorText}`);
+      }
+
+      currentChatId = await res.json();
+      console.log('made new chat ', currentChatId);
+
+      // // Set current index to the new chat
+      // currentChatIndex = blobData.chats.length - 1;
+      currentChatIndex = 5; // ??? CHANGE
 
       // Add to sidebar
-      let li = document.createElement("li");
-      li.classList.add("list-group-item", "selectedChat");
-      li.innerText = selectedPublicChat.title;
-      let newIndex = currentChatIndex;
-      li.dataset.index = newIndex;
-      li.addEventListener("click", () => loadChatByIndex(newIndex)); // WRONG
-      chatHistory.forEach(body => body.prepend(li.cloneNode(true)));
+      addToSidebar(publicChat.chat_summary.title, currentChatIndex, currentChatId, true);
     }
 
     // Set currentModel
@@ -951,6 +946,8 @@ async function sendMessageToAI(message) {
 
       // Append copy button to bottom of response box
       chatContent.appendChild(bottomInfo);
+
+      clearQueryString();
       
     }
   } catch (error) {
@@ -1228,7 +1225,7 @@ async function generateImage(message) {
 
 }
 
-// Post a chat function!!!! postChat
+// Post public a chat function!!!! postChat
 document
   .querySelector("#postChat")
   .addEventListener("click", async function () {
@@ -1237,23 +1234,28 @@ document
       return;
     }
 
-    if (blobData.chats[currentChatIndex].isImageChat) {
-      alert("Cannot post image chats", false);
+    if (!confirm('Do you want to make the current snapshot of this chat public?')) {
       return;
-    }
+    };
+
+    // if (blobData.chats[currentChatIndex].isImageChat) {
+    //   alert("Cannot post image chats", false);
+    //   return;
+    // }
 
     try {
 
+      console.log('posting chat by id: ', currentChatId);
       // Send request to ai api
-      const response = await fetch('/api/summarize-chat', {
+      const response = await fetch(`/api/chats/${currentChatId}/post-public`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${AUTH_TOKEN}`
         },
         body: JSON.stringify({
-          messages: conversation,
-          model: 'gemma2-9b-it',
+          isImageChat: isImageChat,
+          username: USERNAME,
         }),
       });
 
@@ -1263,22 +1265,7 @@ document
       }
 
       const resJson = await response.json();
-      // console.log(resJson);
-      // const botMessage =
-      //   resJson.choices?.[0]?.message?.content ?? "No response.";
-      const parsed = JSON.parse(resJson);
-
-      let newPostData = {
-        username: USERNAME,
-        chat_summary: parsed.chat_summary,
-        chat: blobData.chats[currentChatIndex],
-      };
-
-      let publicBlob = await fetchJSON(PUBLIC_POSTS_URL);
-      console.log(publicBlob);
-      publicBlob.push(newPostData);
-
-      await updateJSONBlob(PUBLIC_POSTS_URL, publicBlob);
+      console.log(resJson);
 
       alert("Posted :)");
     } catch (error) {
@@ -1287,13 +1274,6 @@ document
     }
   });
 
-// // Deleting chats
-// async function deleteChatbyIndex(index) {
-//   // Splice out indexed chat
-//   blobData.chats.splice(index, 1);
-//   // Send to jsonblob
-//   updateJSONBlob(JSON_BLOB_URL, blobData);
-// }
 
 // Deleting chats
 async function deleteChatbyID(chatId) {
@@ -1380,4 +1360,10 @@ if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', updateAppHeight);
 } else {
   window.addEventListener('resize', updateAppHeight);
+}
+
+// Utility: replace the current URL with the same path but no query string
+function clearQueryString() {
+  const cleanUrl = window.location.origin + window.location.pathname;
+  history.replaceState({}, document.title, cleanUrl);
 }
