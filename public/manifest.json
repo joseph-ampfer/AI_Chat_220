@@ -1,0 +1,39 @@
+{
+  "name": "Chat 220",
+  "short_name": "Chat220",
+  "description": "Chat 220 – your next-gen AI platform",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#4a90e2",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+
+  "screenshots": [
+    {
+      "src": "/screenshots/chat220-wide-1.png",
+      "sizes": "640x360",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshots/chat220-portrait-1.png",
+      "sizes": "360x640",
+      "type": "image/png"
+    }
+  ]
+}

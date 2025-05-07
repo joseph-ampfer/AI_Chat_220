@@ -16,6 +16,7 @@ const { error } = require('console');
 const { title } = require('process');
 const { generateReadUrl } = require('../helpers/filesHelpers');
 const authorizeUser = require('../middleware/authorizeUser');
+const fs = require('fs');
 
 
 // So we can define routes here
@@ -42,7 +43,8 @@ async function getGroqChatCompletion(messages, model) {
   return groq.chat.completions.create({
     messages: messages,
     model: model,
-    stream: false
+    stream: true,
+    stream_options: { include_usage:true },
   });
 }
 
@@ -106,6 +108,27 @@ router.post('/transcriptions', authorizeUser, upload.single('file'), async (req,
 
   res.json(transcription);
 
+});
+
+router.post('/tts', async (req, res) => {
+  const text = req.body.text;
+
+  const speechFilePath = "Basil-PlayAI.wav";
+  const model = "playai-tts";
+  const voice = "Basil-PlayAI";
+  const responseFormat = "wav";
+  
+    const response = await groq.audio.speech.create({
+      model: model,
+      voice: voice,
+      input: text,
+      response_format: responseFormat
+    });
+
+  
+  const buffer = Buffer.from(await response.arrayBuffer());
+  await fs.promises.writeFile(speechFilePath, buffer);
+  res.json("success");
 });
 
 // POST /api/summarize-chat
@@ -323,21 +346,34 @@ router.post('/:chatId/messages', authorizeUser, async (req, res) => {
     const chatArr = await db.collection('chats').aggregate(pipline).toArray();
     conversation = chatArr[0].conversation;
   }
-  
+  let aiResponse = "";
+  let usage;
   // Send to ai
   try {
-    const chatCompletion = await getGroqChatCompletion(conversation, model);
-    const aiResponse = chatCompletion.choices[0]?.message?.content || "";
-    res.send(aiResponse);
-    
+    // Change to for await loop to send chunks
+    const stream = await getGroqChatCompletion(conversation, model);
+    for await (const chunk of stream) {
+      // Print the completion returned by the LLM
+      res.write(chunk.choices[0]?.delta?.content || "");
+      aiResponse += chunk.choices[0]?.delta?.content || "";
+      usage = chunk.usage; // Total usage is only in last chunk, otherwise null
+    }
+   
+    // const chatCompletion = await getGroqChatCompletion(conversation, model);
+    // const aiResponse = chatCompletion.choices[0]?.message?.content || "";
+    // res.send(aiResponse);
+
     // Store ai reply to mongodb
     await db.collection('chats').updateOne(
       { _id: new ObjectId(chatId), userId: userId },
-      { $push: { conversation: { 'role': 'assistant', 'content': aiResponse, 'model':model, 'usage':chatCompletion.usage, 'sentAt': new Date() } } }
+      { $push: { conversation: { 'role': 'assistant', 'content': aiResponse, 'model':model, 'usage': usage, 'sentAt': new Date() } } }
     );
   } catch (err) {
     console.error('Chat error:', err.message);
-    res.status(500).json({ error: 'Something went wrong' });
+    //res.status(500).json({ error: 'Something went wrong' });
+    res.write('There was an error: ', err);
+  } finally {
+    res.end();
   }
 
 });

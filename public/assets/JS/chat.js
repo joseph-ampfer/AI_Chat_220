@@ -13,25 +13,91 @@ const AUTH_TOKEN = localStorage.getItem("authToken");
 const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
 const PUBLIC_POSTS_URL =
   "https://jsonblob.com/api/jsonBlob/1346491622271148032";
-const chatHistory = document.querySelector("#chatHistory");
+const chatHistory = document.querySelectorAll(".chatHistory");
 const chatMessages = document.getElementById("chatMessages");
 const chatForm = document.getElementById("chatForm");
 const messageInput = document.getElementById("userMessage");
 const modelDropdown = document.querySelector("#modelSelect");
 const modelBtn = document.querySelector("#modelSelect-btn");
 const imageInput = document.getElementById("imageUpload");
+const imageInputLabel = document.getElementById("imageUploadLabel");
+const filePreview = document.getElementById("filePreview");
 const chatSection = document.getElementById("chat-section");
 const textModelsHTML = `
-  <li><a class="dropdown-item" href="#" >gemma2-9b-it</a></li>
-  
-  <li><a class="dropdown-item" href="#" >llama-3.3-70b-versatile</a></li>
-  <li><a class="dropdown-item" href="#" >llama-3.1-8b-instant</a></li>
-  <li><a class="dropdown-item" href="#" >llama-guard-3-8b</a></li>
-  <li><a class="dropdown-item" href="#" >llama3-70b-8192</a></li>
+  <li>
+    <a class="dropdown-item model-item" data-model="gemma2-9b-it" href="#" >
+      <div >
+        <img src="./assets/images/gemini-logo.svg" >
+        <span>gemma2-9b-it</span>
+      </div>
 
-  <li><a class="dropdown-item" href="#" >deepseek-r1-distill-llama-70b</a></li>
-  <li><a class="dropdown-item" href="#" >meta-llama/llama-4-maverick-17b-128e-instruct</a></li>
-  <li><a class="dropdown-item" href="#" >meta-llama/llama-4-scout-17b-16e-instruct</a></li>`
+    </a>
+  </li>
+
+  <li>
+    <a class="dropdown-item model-item" href="#" data-model="llama-3.3-70b-versatile" >
+      <div>
+        <img class="meta-logo" src=" ./assets/images/meta-logo.png"   alt="" data-csiid="8ggYaKa4JoH_p84P04W_4Qo_3" data-atf="1">
+        <span>llama-3.3-70b-versatile</span>
+      </div>
+      
+    </a>
+  </li>
+  <li>
+    <a class="dropdown-item model-item" href="#" data-model="llama-3.1-8b-instant" >
+      <div>
+        <img class="meta-logo" src=" ./assets/images/meta-logo.png" alt="" data-csiid="8ggYaKa4JoH_p84P04W_4Qo_3" data-atf="1">
+        <span>llama-3.1-8b-instant</span>
+      </div>
+      
+    </a>
+  </li>
+  <li>
+    <a class="dropdown-item model-item" href="#" data-model="llama-guard-3-8b" >
+      <div>
+        <img class="meta-logo" src=" ./assets/images/meta-logo.png"   alt="" data-csiid="8ggYaKa4JoH_p84P04W_4Qo_3" data-atf="1">
+        <span>llama-guard-3-8b</span>
+      </div>
+      
+    </a>
+  </li>
+  <li>
+    <a class="dropdown-item model-item" href="#" data-model="llama3-70b-8192" >
+      <div>
+        <img class="meta-logo" src=" ./assets/images/meta-logo.png"   alt="" data-csiid="8ggYaKa4JoH_p84P04W_4Qo_3" data-atf="1">
+        <span>llama3-70b-8192</span>
+      </div>
+    </a>
+  </li>
+  <li class="d-flex justify-content-between">
+    <a class="dropdown-item model-item" href="#" data-model="deepseek-r1-distill-llama-70b" >
+      <div>
+        <img class="deepseek-logo" src="./assets/images/deepseek-logo.png" alt="" >
+        <span>deepseek-r1-distill-llama-70b</span>
+      </div>
+      <img class="reasoning-model" src="./assets/images/brain.svg" title="Reasoning model" >
+    </a>
+  </li>
+  <li>
+    <a class="dropdown-item model-item" href="#" data-model="meta-llama/llama-4-maverick-17b-128e-instruct" >
+      <div>
+        <img class="meta-logo" src=" ./assets/images/meta-logo.png"   alt="" data-csiid="8ggYaKa4JoH_p84P04W_4Qo_3" data-atf="1">
+        <span>meta-llama/llama-4-maverick-17b-128e-instruct</span>
+      </div>
+      <img class="vision-model" src="./assets/images/eye.svg" title="Supports image uploads and analysis">
+    </a>
+  </li>
+  <li>
+    <a class="dropdown-item model-item" href="#" data-model="meta-llama/llama-4-scout-17b-16e-instruct" >
+      <div>
+        <img class="meta-logo" src=" ./assets/images/meta-logo.png"   alt="" data-csiid="8ggYaKa4JoH_p84P04W_4Qo_3" data-atf="1">
+        <span>meta-llama/llama-4-scout-17b-16e-instruct</span>
+      </div>
+      <img class="vision-model" src="./assets/images/eye.svg" title="Supports image uploads and analysis">
+    </a>
+  </li>
+`
+
 const textToImageModelsHTML = `
   <li><a class="dropdown-item" href="#" >@cf/black-forest-labs/flux-1-schnell</a></li>
   
@@ -53,6 +119,20 @@ let selectedPublicChat = {};
 let chatId;
 let currentChatId;
 let uploadedFileId;
+
+const { Marked } = globalThis.marked;
+const { markedHighlight } = globalThis.markedHighlight;
+
+const marked = new Marked(
+  markedHighlight({
+    emptyLangClass: 'hljs',
+    langPrefix: 'hljs language-',
+    highlight(code, lang, info) {
+      const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+      return hljs.highlight(code, { language }).value;
+    }
+  })
+);
 
 // If a chat to view is in session storage, display it.
 // MOVED TO TOP FOR FASTER LOADING
@@ -84,6 +164,10 @@ imageInput.addEventListener("change", async function (event) {
     return;
   }
 
+  // show thumbnail
+  filePreview.src = URL.createObjectURL(file);
+  filePreview.style.display = 'inline-block';
+
   // Log detailed information about the file
   console.log(
     "File selected:",
@@ -110,7 +194,7 @@ imageInput.addEventListener("change", async function (event) {
     // The result is a Data URL that includes the base64 string
     const dataURL = reader.result;
     console.log(
-      "Data URL generated (first 50 chars):",
+      "Data base64 URL generated (first 50 chars):",
       dataURL.substring(0, 50) + "..."
     );
     uploadedImageBase64 = dataURL;
@@ -129,6 +213,8 @@ imageInput.addEventListener("change", async function (event) {
   
   const { uploadUrl, fileId } = await uploadResponse.json();
 
+  console.log("Upload URL: ", uploadUrl);
+
   // 2) UPLOAD TO S3;
   const uploadRes = await fetch(uploadUrl, {
     method: 'PUT',
@@ -137,9 +223,9 @@ imageInput.addEventListener("change", async function (event) {
   });
 
   if (!uploadRes.ok) {
-    console.error("Upload failed:", uploadRes.statusText);
+    console.error("Upload to S3 failed:", uploadRes.statusText);
   } else {
-    console.log("Upload success, fileId = ", fileId);
+    console.log("Upload to S3 success, fileId = ", fileId);
     uploadedFileId = fileId;
   }
 });
@@ -156,7 +242,7 @@ function displayImagePreview(imageBase64) {
 function displayGeneratedImage(imageBase64, model) {
   const imgDiv = document.createElement("div");
   imgDiv.classList.add("mb-3", "mx-auto");
-  imgDiv.innerHTML = `<img src="${imageBase64}" class="img-fluid" style="max-width: 400px;">`;
+  imgDiv.innerHTML = `<img src="${imageBase64}" class="img-fluid" style="width: 100%; max-width: 400px;">`;
   
 
   // Make div for model info
@@ -198,11 +284,14 @@ function newChat() {
   //model = "gemma2-9b-it";
   // Model select
   attachModelDropdownListeners();
+
+  imageInput.classList.add("d-none");
+  imageInputLabel.classList.add("d-none");
 }
 // Attach to new chat button
-document
-  .querySelector("#new-chat-btn")
-  .addEventListener("click", () => newChat());
+// document
+//   .querySelectorAll("#new-chat-btn")
+//   .addEventListener("click", () => newChat());
 
 // New image generation chat function
 function newImageChat() {
@@ -221,9 +310,9 @@ function newImageChat() {
   attachModelDropdownListeners();
   model = "@cf/black-forest-labs/flux-1-schnell";
 }
-document
-  .querySelector("#img-220-btn")
-  .addEventListener("click", () => newImageChat());
+// document
+//   .querySelector("#img-220-btn")
+//   .addEventListener("click", () => newImageChat());
 
 // Helper: Fetch JSON from URL
 async function fetchJSON(url) {
@@ -254,12 +343,52 @@ function appendMessage(message, isUser = true, model2 = "Unkown model") {
   if (isUser) {
     messageDiv.innerHTML = `<div class="bg-primary user-message" >${message}</div>`;
   } else {
+    // Parses markdown and highlights with hljs
     messageDiv.innerHTML = marked.parse(message);
 
-    // Make copy button
+    // 1) language labels
+    messageDiv.querySelectorAll("pre code").forEach(block => {
+      console.log("block: ", block);
+      const preBlock = block.parentElement;
+      if (!preBlock) return;
+
+      // Ensure we don't duplicate labels
+      if (preBlock.querySelector(".code-lang")) return;
+
+      // Extract language name class from hljs
+      const langClass = block.className.match(/language-([\w]+)/);
+      if (langClass) {
+        const languageName = langClass[1];
+
+        // Create language label
+        const langLabel = document.createElement("div");
+        langLabel.className = "code-lang";
+        langLabel.textContent = languageName;
+
+        // Insert label before the code block
+        preBlock.insertBefore(langLabel, block);
+      }
+    });
+
+    // 2) copy buttons
+    messageDiv.querySelectorAll("pre code").forEach(code => {
+      const preBlock = code.parentElement;
+
+      // Skip creating a new button if one already exists inside the pree
+      if (preBlock.querySelector('button')) { return; }
+
+        // Create copy button for code
+      const codeCopyBtn = makeCopyBtn(code.innerText, 'copy-code-btn');
+
+      // Insert label before the code block
+      preBlock.insertBefore(codeCopyBtn, code);
+    });
+
+
+    // Create copy button for chatContent
     const copyButton = makeCopyBtn(message);
 
-    // Make div
+    // Make div for bottom info
     const bottomInfo = document.createElement("div");
 
     // Make model text
@@ -269,6 +398,7 @@ function appendMessage(message, isUser = true, model2 = "Unkown model") {
     bottomInfo.appendChild(modelSpan);
     bottomInfo.appendChild(copyButton);
 
+    // Append copy button to bottom of response box
     messageDiv.appendChild(bottomInfo);
   }
   chatMessages.appendChild(messageDiv);
@@ -283,7 +413,7 @@ async function loadSideBar(history) {
   const sections = ["Today", "Yesterday", "Previous 7 Days", "Older"];
 
   // Remove placeholder
-  chatHistory.innerHTML = "";
+  chatHistory.forEach(body => body.innerHTML = "");
 
   // Go through each section, using section as a key for grouped chats
   sections.forEach((section) => {
@@ -292,7 +422,7 @@ async function loadSideBar(history) {
       const header = document.createElement("li");
       header.classList.add("list-group-item", "fw-bold", "bg-light");
       header.innerText = section;
-      chatHistory.appendChild(header);
+      chatHistory.forEach(body => body.appendChild(header.cloneNode(true)));
 
       // Append chats under the corresponding header
       // Going forwards, bc they come sorted
@@ -300,8 +430,10 @@ async function loadSideBar(history) {
         const { title, _id } = groupedChats[section][i].chat;
         
         // Use helper
-        const li = createChatListItem({title:title, index:groupedChats[section][i].index, chatId:_id})
-        chatHistory.appendChild(li);
+        chatHistory.forEach(body => {
+          const li = createChatListItem({ title: title, index: groupedChats[section][i].index, chatId: _id });
+          body.appendChild(li);
+        });
       }
       
     }
@@ -381,6 +513,9 @@ async function loadChatByID(chatId) {
       attachModelDropdownListeners();
       model = "gemma2-9b-it";
     }
+
+    imageInput.classList.add("d-none");
+    imageInputLabel.classList.add("d-none");
   
     conversation = chat.conversation;
     currentChatId = chatId;
@@ -410,7 +545,7 @@ async function loadChatByID(chatId) {
       }
     }
     //currentChatIndex = index;
-    hljs.highlightAll();
+    //hljs.highlightAll();
     console.log("Loaded chat by chatId:", chatId);
   }
   document.querySelector(".selectedChat")?.classList.remove("selectedChat");
@@ -540,8 +675,10 @@ async function loadChatHistory() {
 }
 
 function addToSidebar(title, index, chatId) {
-  const li = createChatListItem({title:title, index:index, chatId:chatId});
-  chatHistory.prepend(li);
+  chatHistory.forEach(body => {
+    const li = createChatListItem({title:title, index:index, chatId:chatId});
+    body.prepend(li);
+  });
 }
 
 function createChatListItem({ title, index, chatId }) {
@@ -664,11 +801,15 @@ async function sendMessageToAI(message) {
       li.innerText = selectedPublicChat.title;
       let newIndex = currentChatIndex;
       li.dataset.index = newIndex;
-      li.addEventListener("click", () => loadChatByIndex(newIndex));
-      document.querySelector("#chatHistory").prepend(li);
+      li.addEventListener("click", () => loadChatByIndex(newIndex)); // WRONG
+      chatHistory.forEach(body => body.prepend(li.cloneNode(true)));
     }
 
+    // Set currentModel
     let currentModel = model;
+
+    // Remove file preview
+    filePreview.style.display = "none";
 
     // Check if using vision model
     let messageContent;
@@ -725,13 +866,92 @@ async function sendMessageToAI(message) {
         throw new Error(`Error ${response.status}: ${errorText}`);
       }
 
-      const botMessage = await response.text() ?? "No response.";
+      // Get the chunks of the response
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let aiText = '';
 
-      appendMessage(botMessage, false, currentModel); // Display bot response
+      // Create chat box
+      const chatContent = document.createElement('div');
+      chatContent.classList.add('prose', 'prose-invert', 'max-w-none', 'chat-content');
+      chatMessages.appendChild(chatContent); 
+
+      // Automatic scroll with response
+      const observer = new MutationObserver(() => {
+          chatSection.scrollTop = chatSection.scrollHeight;
+      });
+      observer.observe(chatContent, { childList: true });
 
       loader.remove();
 
-      hljs.highlightAll(); // Highlight code 
+      // Process chunks
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        // Decode the 0's and 1's into text, add to aiText
+        const textChunk = decoder.decode(value, { stream: true });
+        aiText += textChunk;
+        
+        // Parse the streamed content and display!!!
+        const formattedHTML = marked.parse(aiText);
+        chatContent.innerHTML = formattedHTML;
+
+        // Inject CODE language labels after rendering
+        document.querySelectorAll("pre code").forEach(block => {
+          const preBlock = block.parentElement;
+          if (!preBlock) return;
+
+          // Ensure we don't duplicate labels
+          if (preBlock.querySelector(".code-lang")) return;
+
+          // Extract language name class from hljs
+          const langClass = block.className.match(/language-([\w]+)/);
+          if (langClass) {
+            const languageName = langClass[1];
+
+            // Create language label
+            const langLabel = document.createElement("div");
+            langLabel.className = "code-lang";
+            langLabel.textContent = languageName;
+
+            // Insert label before the code block
+            preBlock.insertBefore(langLabel, block);
+          }
+        });
+
+      }
+
+      document.querySelectorAll("pre code").forEach(code => {
+        const preBlock = code.parentElement;
+
+        // Skip creating a new button if one already exists inside the pree
+        if (preBlock.querySelector('button')) { return; }
+
+         // Create copy button for code
+        const codeCopyBtn = makeCopyBtn(code.innerText, 'copy-code-btn');
+
+        // Insert label before the code block
+        preBlock.insertBefore(codeCopyBtn, code);
+      });
+
+
+      // Create copy button for chatContent
+      const copyButton = makeCopyBtn(aiText);
+
+      // Make div for bottom info
+      const bottomInfo = document.createElement("div");
+
+      // Make model text
+      const modelSpan = document.createElement("span");
+      modelSpan.classList.add("blockquote-footer");
+      modelSpan.innerText = model;
+      bottomInfo.appendChild(modelSpan);
+      bottomInfo.appendChild(copyButton);
+
+      // Append copy button to bottom of response box
+      chatContent.appendChild(bottomInfo);
+      
     }
   } catch (error) {
     console.error("Request failed:", error);
@@ -745,7 +965,7 @@ async function sendMessageToAI(message) {
 }
 
 // Helper: make copy button
-function makeCopyBtn(toCopy) {
+function makeCopyBtn(toCopy, className='') {
   // Create copy button for chatContent
   const copyButton = document.createElement("button");
   copyButton.title = "Copy";
@@ -753,6 +973,7 @@ function makeCopyBtn(toCopy) {
             <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/>
           </svg>`;
   copyButton.classList.add("btn");
+  if (className) {copyButton.classList.add(`${className}`)}
 
   // Add copy functionality
   copyButton.addEventListener("click", function () {
@@ -1118,8 +1339,10 @@ function attachModelDropdownListeners() {
       model = e.innerText.trim();
       if (model === "meta-llama/llama-4-maverick-17b-128e-instruct" || model === "meta-llama/llama-4-scout-17b-16e-instruct") {
         imageInput.classList.remove("d-none");
+        imageInputLabel.classList.remove("d-none");
       } else {
         imageInput.classList.add("d-none");
+        imageInputLabel.classList.add("d-none");
       }
     });
   });
@@ -1133,4 +1356,28 @@ function logInIfNeeded(res) {
     }
     return;
   }
+}
+
+function updateAppHeight() {
+  // Prefer VisualViewport API when available (more accurate on mobile)
+  const h = window.visualViewport
+    ? window.visualViewport.height
+    : window.innerHeight;
+
+  console.log('updateAppHeight');
+  // Set the CSS variable (in px)
+  document.documentElement.style.setProperty(
+    '--app-height',
+    `${h}px`
+  );
+}
+
+// Update on initial load
+updateAppHeight();
+
+// Update whenever the viewport resizes (keyboard open/close, orientation change…)
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', updateAppHeight);
+} else {
+  window.addEventListener('resize', updateAppHeight);
 }
