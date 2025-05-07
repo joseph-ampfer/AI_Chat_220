@@ -59,35 +59,38 @@ function displayPosts(filteredPosts) {
     postCol.classList.add("col-12", "col-md-6", "col-lg-4");
 
     let postCard = document.createElement("div");
-    postCard.classList.add("card");
-    postCard.style.width = "20rem";
-    postCard.style.margin = "auto";
+    // apply both the Bootstrap base .card and our custom styling
+    postCard.classList.add("card", "card-custom");
+    // no more inline width/margin
 
     let cardData = document.createElement("div");
     cardData.classList.add("card-body");
 
     let cardTitle = document.createElement("h5");
     cardTitle.classList.add("card-title");
-    cardTitle.innerText = post.chat_summary["title"];
+    cardTitle.innerText = post.chat_summary.title;
     cardData.appendChild(cardTitle);
 
     let cardAuthor = document.createElement("h6");
+    // use the subtitle class for smaller, muted text
+    cardAuthor.classList.add("card-subtitle");
     cardAuthor.innerText = `Chat by: ${post.username}`;
     cardData.appendChild(cardAuthor);
 
     let cardText = document.createElement("p");
-    cardText.innerText = post.chat_summary["summary"];
+    cardText.classList.add("card-text");
+    cardText.innerText = post.chat_summary.summary;
     cardData.appendChild(cardText);
 
     let cardLink = document.createElement("a");
     cardLink.setAttribute("href", `chat?chatId=${post._id}`);
     cardLink.dataset.index = i;
-    // cardLink.addEventListener("click", () => redirectAndLoadChat(post.chat));
     cardLink.classList.add("card-link");
-    cardLink.innerText = "Check out this Conversation";
+    cardLink.innerText = "Check out this Conversation →";
     cardData.appendChild(cardLink);
 
     postCard.appendChild(cardData);
+
     postCol.appendChild(postCard);
     divRow.appendChild(postCol);
   }

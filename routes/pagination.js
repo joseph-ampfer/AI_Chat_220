@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   let publicChats;
   try{
-  const cursor = db.collection('publicChats').find({},{projection:{_id: 1, username: 1, "chat_summary.title": 1, "chat_summary.summary": 1, "chat.timestamp": 1}}).sort({"chat.timestamp":-1});
+  const cursor = db.collection('publicChats').find({},{projection:{_id: 1, username: 1, "chat_summary.title": 1, "chat_summary.summary": 1, "chat.timestamp": 1}}).sort({createdAt:-1});
   publicChats = await cursor.toArray();
   }catch(err){
     res.status(500).json(err);
