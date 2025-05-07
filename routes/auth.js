@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../db');
 const { OAuth2Client } = require('google-auth-library');
+const authorizeUser = require('../middleware/authorizeUser');
 
 const CLIENT_ID = process.env.GOOGLE_OATH2_CLIENT_ID;
 const googleClient = new OAuth2Client(CLIENT_ID);
@@ -124,17 +125,17 @@ router.post('/login', async (req, res) => {
     }
 });
 
-
+// GET api/auth/status
 // Check if logged in, by cookie
-router.get('/status', (req, res) => {
+router.get('/status', authorizeUser, async (req, res) => {
     if (!req.cookies.token) return res.sendStatus(401);
     // optionally verify JWT here…
     res.json({ authenticated: true, user: req.user });
 });
 
-
+//  api/auth/logout
 // Clear the cookie for logout
-router.post('/logout', (req, res) => {
+router.delete('/session', (req, res) => {
     // Clear the same cookie name + options you used when setting it
     res.clearCookie('token', {
       httpOnly: true,
