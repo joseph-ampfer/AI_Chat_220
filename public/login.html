@@ -43,7 +43,7 @@
             aria-describedby="emailHelp"
           />
           <div id="emailHelp" class="form-text">
-            Don't have an account <a href="signup.html">Create one here</a>
+            Don't have an account <a href="signup">Create one here</a>
           </div>
         </div>
         <div class="mb-3">
@@ -118,7 +118,7 @@
               //localStorage.setItem('authToken', result.token); in cookie now
               let smallUsername = userEmail.substring(0, userEmail.indexOf("@"));
               localStorage.setItem("username", smallUsername);
-              window.location.href = "index.html";
+              window.location.href = "/";
             }
             else {
               alert.innerHTML = `<div class="alert alert-danger alert-dismissible" role="alert">

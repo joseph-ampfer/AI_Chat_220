@@ -30,7 +30,7 @@
             <a class="nav-link active" aria-current="page" href="#">Home</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="chat.html">Chat with AI</a>
+            <a class="nav-link" href="chat">Chat with AI</a>
           </li>
         </ul>
 
@@ -86,7 +86,7 @@
       if (!res.ok) {
         const signup = document.createElement('span');
         signup.classList.add('nav-item', 'ms-auto');
-        signup.innerHTML = `<a class="nav-link" href="signup.html">Signup</a>`;
+        signup.innerHTML = `<a class="nav-link" href="signup">Signup</a>`;
 
         document.getElementById('navbarNav').appendChild(signup);
       } else {
