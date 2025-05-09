@@ -9,10 +9,10 @@ https://youtu.be/5kuKlZ_bMj4
 https://joseph-ampfer.github.io/AI_Chat_220/
 
 # To try out our site, download our repo and:
-1. Get free api key from groq  https://console.groq.com/keys
-2. Make `config/` folder in root
-3. In `config/`, make `keys.js` file and write `const GROQ_API_KEY = "your-key"`
-4. Done!
+1. Make `.env` file in root
+2. Paste in the configuration we sent
+3. In terminal run `node server.js`
+4. Click on the link!
 
 # Team and Contributions
 
