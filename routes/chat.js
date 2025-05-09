@@ -7,19 +7,22 @@ const { promisify } = require('util');
 const pipe = promisify(pipeline);
 const { File } = require('formdata-node'); // polyfill for browser File API (used in transcription)
 const Groq = require("groq-sdk");
-const { z } = require('zod');
+const { ModelEnum,
+    messageScheme,
+    newChatSchema,
+    imageGenRouteScheme } = require('../schemas/chat.schema');
 const db = require('../db');
 const { ObjectId } = require('mongodb');
 const modelCapabilities = require('../config/modelCapabilities');
+const { generateReadUrl } = require('../helpers/filesHelpers');
+const authorizeUser = require('../middleware/authorizeUser');
+const { fetchTextOnlyConversation } = require('../services/chatServices');
   
 // For future
 const { callChatAPI } = require('../controllers/chatController');
 const { error } = require('console');
 const { title } = require('process');
-const { generateReadUrl } = require('../helpers/filesHelpers');
-const authorizeUser = require('../middleware/authorizeUser');
 const fs = require('fs');
-const { fetchTextOnlyConversation } = require('../services/chatServices');
 
 
 // So we can define routes here
@@ -248,14 +251,9 @@ router.post('/:chatId/post-public', authorizeUser, async (req, res) => {
 
 });
 
-const getChatSchema = z.object({
-
-});
-
 
 // GET '/api/chats/
 // List chats (sidebar)
-const userid = z.string()
 router.get('/', authorizeUser, async (req, res) => {
   const userId = new ObjectId(req.user.id);
 
@@ -291,7 +289,7 @@ router.get('/:chatId', authorizeUser, async (req, res) => {
 });
 
 // GET '/api/chats/:chatId/public
-// anyone can view...
+// anyone can view...the public chats
 router.get('/:chatId/public', async (req, res) => {
   const { chatId } = req.params;
   const chat = await db.collection('publicChats').findOne({ _id: new ObjectId(chatId) });
@@ -311,42 +309,6 @@ router.get('/:chatId/public', async (req, res) => {
   res.json(chat);
 });
 
-// GET '/api/chats/:chatId/public
-router.get('/:chatId/public', async (req, res) => {
-  const { chatId } = req.params;
-  const chat = await db.collection('publicChats').findOne({ _id: new ObjectId(chatId) });
-
-  // Walk through each message and generate url for images, parallel bc of async
-  const promises = chat.conversation.map(async message => {
-    const fileId = message.content?.[1]?.image_url?.key;
-    if (!fileId) return;
-
-    const url = await generateReadUrl(message.content[1].image_url.key);
-    message.content[1].image_url = { url: url };
-  });
-
-  await Promise.all(promises);
-
-  if (!chat) return res.status(404).send({ error: 'Chat not found' });
-  res.json(chat);
-});
-
-const ModelEnum = z.enum([
-  'gemma2-9b-it',
-  'llama-3.3-70b-versatile',
-  'llama-3.1-8b-instant',
-  'llama-guard-3-8b',
-  'llama3-70b-8192',
-  'deepseek-r1-distill-llama-70b',
-  'meta-llama/llama-4-maverick-17b-128e-instruct',
-  'meta-llama/llama-4-scout-17b-16e-instruct',
-]);
-
-const messageScheme = z.object({
-  text: z.string(),
-  model: ModelEnum,
-  fileId: z.string().optional(),
-});
 
 // POST '/api/chats/:chatId/messages
 // Continue a convo (convo already exists), send chatId
@@ -457,9 +419,6 @@ router.post('/:chatId/messages', authorizeUser, async (req, res) => {
 
 });
 
-const newChatSchema = z.object({
-  title: z.string()
-});
 
 // Create a new chat, return its chatId 
 // POST '/api/chats
@@ -542,11 +501,6 @@ router.patch('/:chatId/rename', authorizeUser, async (req, res) => {
 });
 
 
-const imageGenRouteScheme = z.object({
-  text: z.string(),
-  model: z.string(),
-  fileId: z.string(),
-});
 
 // POST /api/chats/${chatId}/imageGen
 router.post('/:chatId/imageGen', authorizeUser, async (req, res) => {

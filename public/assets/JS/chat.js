@@ -1222,20 +1222,28 @@ function stopRecording() {
   }
 }
 
-function toggleRecording() {
+async function toggleRecording() {
   const toggleBtn = document.getElementById("toggle-recording");
+
   if (isRecording) {
+    // STOP
     stopRecording();
-    toggleBtn.classList.remove("btn-danger");
-    toggleBtn.classList.add("btn-primary");
-    toggleBtn.innerHTML = micIcon; // Show mic icon
+    toggleBtn.classList.replace("btn-danger", "btn-primary");
+    toggleBtn.innerHTML = micIcon;
+    isRecording = false;
+
   } else {
-    startRecording();
-    toggleBtn.classList.remove("btn-primary");
-    toggleBtn.classList.add("btn-danger");
-    toggleBtn.innerHTML = stopIcon; // Show stop icon
+    // START – wait for permission + recorder.start()
+    try {
+      await startRecording();
+      toggleBtn.classList.replace("btn-primary", "btn-danger");
+      toggleBtn.innerHTML = stopIcon;
+      isRecording = true;
+    } catch (err) {
+      console.error("Could not start recording:", err);
+      // maybe show a warning to user
+    }
   }
-  isRecording = !isRecording;
 }
 
 // Helper function to convert a blob to a Base64 string
