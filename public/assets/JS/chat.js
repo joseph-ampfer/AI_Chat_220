@@ -98,13 +98,60 @@ const textModelsHTML = `
 `
 
 const textToImageModelsHTML = `
-  <li><a class="dropdown-item" href="#" >@cf/black-forest-labs/flux-1-schnell</a></li>
-  
-  <li><a class="dropdown-item" href="#" >@cf/runwayml/stable-diffusion-v1-5-inpainting</a></li>
-  <li><a class="dropdown-item" href="#" >@cf/bytedance/stable-diffusion-xl-lightning</a></li>
-  <li><a class="dropdown-item" href="#" >@cf/lykon/dreamshaper-8-lcm</a></li>
-  <li><a class="dropdown-item" href="#" >@cf/stabilityai/stable-diffusion-xl-base-1.0</a></li>
-  <li><a class="dropdown-item" href="#" >@cf/runwayml/stable-diffusion-v1-5-img2img</a></li>`
+  <li>
+  <a class="dropdown-item model-item" data-model="@cf/black-forest-labs/flux-1-schnell" href="#">
+    <div>
+      <img class="img-logo" src="./assets/images/blackforestlabs-logo.webp" alt="black-forest-labs logo">
+      <span>Flux 1 Schnell</span>
+    </div>
+  </a>
+</li>
+
+<!-- <li>
+  <a class="dropdown-item model-item" data-model="@cf/runwayml/stable-diffusion-v1-5-inpainting" href="#">
+    <div>
+      <img class="img-logo" src="./assets/images/runwayml-logo.png" alt="runwayml logo">
+      <span>Stable Diffusion V1.5 Inpainting</span>
+    </div>
+  </a>
+</li> -->
+
+<li>
+  <a class="dropdown-item model-item" data-model="@cf/bytedance/stable-diffusion-xl-lightning" href="#">
+    <div>
+      <img class="img-logo" src="./assets/images/bytedance-logo.png" alt="bytedance logo">
+      <span>Stable Diffusion XL Lightning</span>
+    </div>
+  </a>
+</li>
+
+<li>
+  <a class="dropdown-item model-item" data-model="@cf/stabilityai/stable-diffusion-xl-base-1.0" href="#">
+    <div>
+      <img class="img-logo" src="./assets/images/stabilityai-logo.png" alt="stabilityai logo">
+      <span>Stable Diffusion XL Base 1.0</span>
+    </div>
+  </a>
+</li>
+
+<li>
+  <a class="dropdown-item model-item" data-model="@cf/lykon/dreamshaper-8-lcm" href="#">
+    <div>
+      <div ></div>
+      <span style="margin-left: 2.0rem">Dreamshaper 8 LCM</span>
+    </div>
+  </a>
+</li>
+
+<!-- <li>
+  <a class="dropdown-item model-item" data-model="@cf/runwayml/stable-diffusion-v1-5-img2img" href="#">
+    <div>
+      <img class="img-logo" src="./assets/images/runwayml-logo.png" alt="runwayml logo">
+      <span>Stable Diffusion V1.5 Img2Img</span>
+    </div>
+  </a> -->
+</li>
+`
 const textToImageModels = ['@cf/black-forest-labs/flux-1-schnell', '@cf/runwayml/stable-diffusion-v1-5-inpainting', '@cf/bytedance/stable-diffusion-xl-lightning', '@cf/lykon/dreamshaper-8-lcm', '@cf/stabilityai/stable-diffusion-xl-base-1.0', '@cf/runwayml/stable-diffusion-v1-5-img2img'];
 
 // Global Variables
@@ -311,7 +358,7 @@ function newImageChat() {
   currentChatIndex = -1;
   // Remove selected chat highlight
   document.querySelector(".selectedChat")?.classList.remove("selectedChat");
-  modelBtn.innerText = "@cf/black-forest-labs/flux-1-schnell";
+  modelBtn.innerText = "Flux 1 Schnell";
   modelDropdown.innerHTML = textToImageModelsHTML;
   attachModelDropdownListeners();
   model = "@cf/black-forest-labs/flux-1-schnell";
@@ -934,6 +981,9 @@ async function sendMessageToAI(message) {
       // Create copy button for chatContent
       const copyButton = makeCopyBtn(aiText);
 
+      // Creat TTS button for chatContent
+      //const ttsBtn = makeTtsBtn(aiText);
+
       // Make div for bottom info
       const bottomInfo = document.createElement("div");
 
@@ -943,6 +993,7 @@ async function sendMessageToAI(message) {
       modelSpan.innerText = model;
       bottomInfo.appendChild(modelSpan);
       bottomInfo.appendChild(copyButton);
+      //bottomInfo.appendChild(ttsBtn);
 
       // Append copy button to bottom of response box
       chatContent.appendChild(bottomInfo);
@@ -991,6 +1042,75 @@ function makeCopyBtn(toCopy, className='') {
       .catch((err) => console.error("Failed to copy: ", err));
   });
   return copyButton;
+}
+
+function makeTtsBtn(message) {
+  const ttsBtn = document.createElement('button');
+  ttsBtn.innerHTML = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-volume-up" viewBox="0 0 16 16">
+    <path d="M11.536 14.01A8.47 8.47 0 0 0 14.026 8a8.47 8.47 0 0 0-2.49-6.01l-.708.707A7.48 7.48 0 0 1 13.025 8c0 2.071-.84 3.946-2.197 5.303z"/>
+    <path d="M10.121 12.596A6.48 6.48 0 0 0 12.025 8a6.48 6.48 0 0 0-1.904-4.596l-.707.707A5.48 5.48 0 0 1 11.025 8a5.48 5.48 0 0 1-1.61 3.89z"/>
+    <path d="M10.025 8a4.5 4.5 0 0 1-1.318 3.182L8 10.475A3.5 3.5 0 0 0 9.025 8c0-.966-.392-1.841-1.025-2.475l.707-.707A4.5 4.5 0 0 1 10.025 8M7 4a.5.5 0 0 0-.812-.39L3.825 5.5H1.5A.5.5 0 0 0 1 6v4a.5.5 0 0 0 .5.5h2.325l2.363 1.89A.5.5 0 0 0 7 12zM4.312 6.39 6 5.04v5.92L4.312 9.61A.5.5 0 0 0 4 9.5H2v-3h2a.5.5 0 0 0 .312-.11"/>
+  </svg>`;
+  ttsBtn.classList.add('btn');
+  ttsBtn.setAttribute('id', 'ttsBtn');
+
+  const blobBtn = document.createElement('button');
+  blobBtn.innerText = "Fetch+Blob";
+
+  const audioEl = document.createElement('audio');
+  audioEl.hidden = true;
+
+  // For testing performance... later
+  // async function measureStart(fn) {
+  //   return new Promise(resolve => {
+  //     const t0 = performance.now();
+  //     function onPlay() {
+  //       const t1 = performance.now();
+  //       audioEl.removeEventListener('playing', onPlay);
+  //       resolve(t1 - t0);
+  //     }
+  //     audioEl.addEventListener('playing', onPlay);
+  //     fn();
+  //   });
+  // }
+
+  // Add tts functionality
+  ttsBtn.addEventListener('click', async () => {
+    //const delta = await measureStart(async() => {
+      // point <audio> directly at your chunked endpoint
+      audioEl.src = `/api/chats/tts?text=${message}`;  // will produce a chunked response
+      audioEl.hidden = false;
+      audioEl.play();
+    //});
+    //console.log(`Stream approach start latency: ${delta.toFixed(1)}ms`);
+  });
+
+  // blobBtn.addEventListener('click', async () => {
+  //   const delta = await measureStart(async () => {
+  //     // Approach B: fetch then blob
+  //     const res = await fetch('/api/chats/tts', {
+  //       method: 'POST',
+  //       headers: { 'Content-Type':'application/json' },
+  //       body: JSON.stringify({ text: message })
+  //     });
+  //     if (!res.ok) {
+  //       const u = new SpeechSynthesisUtterance(message);
+  //       speechSynthesis.speak(u);
+  //       return;
+  //     }
+  //     const blob = await res.blob();
+  //     audioEl.src    = URL.createObjectURL(blob);
+  //     audioEl.hidden = false;
+  //     await audioEl.play();
+  //   });
+  //   console.log(`Blob approach start latency:   ${delta.toFixed(1)}ms`);
+  // });
+
+  const bundle = document.createElement('span');
+  bundle.appendChild(ttsBtn);
+  bundle.appendChild(blobBtn);
+  return ttsBtn;
 }
 
 // Handle enter press in textarea
@@ -1154,7 +1274,7 @@ async function generateImage(message) {
   // Generate image from Cloudflare
   const response = await fetch(`https://imagegen.jampfer.workers.dev/`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${AUTH_TOKEN}` },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer AUTH_TOKEN` },
     body: JSON.stringify({ prompt: message, model: model }),
   });
 
@@ -1315,8 +1435,8 @@ async function renameChatByID(chatId, title) {
 function attachModelDropdownListeners() {
   document.querySelectorAll("#modelSelect li a").forEach((e) => {
     e.addEventListener("click", function () {
-      modelBtn.innerText = e.innerText;
-      model = e.innerText.trim();
+      modelBtn.innerText = this.innerText;
+      model = this.dataset.model.trim();
       if (model === "meta-llama/llama-4-maverick-17b-128e-instruct" || model === "meta-llama/llama-4-scout-17b-16e-instruct") {
         imageInput.classList.remove("d-none");
         imageInputLabel.classList.remove("d-none");

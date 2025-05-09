@@ -254,6 +254,26 @@ pre {
   border-radius: 0.5rem;
 }
 
+.blockquote-footer {
+  margin-right: 0.75rem;
+}
+#ttsBtn {
+  color: #6c757d;
+}
+.img-logo {
+  height: 20px;
+  aspect-ratio: 1;
+  margin-right: 0.5rem;
+  /* 1) flatten to black & white, 2) map black → your blue tint */
+  filter:
+    invert(28%)     /* roughly shift midtones toward white */
+    sepia(97%)      /* pump yellow/red for a warm base */
+    saturate(7497%) /* crank saturation so hue-rotate has fuel */
+    hue-rotate(200deg) /* spin into pure-blue territory */
+    brightness(95%) /* fine-tune lightness */
+    contrast(102%); /* sharpen edges */
+
+}
 /* @media (max-width: 560px) {
   .chat-history {
     position: fixed;

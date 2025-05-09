@@ -2,7 +2,9 @@
 const express = require('express');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
-const { Readable } = require('stream');
+const { Readable, pipeline } = require('stream');
+const { promisify } = require('util');
+const pipe = promisify(pipeline);
 const { File } = require('formdata-node'); // polyfill for browser File API (used in transcription)
 const Groq = require("groq-sdk");
 const { z } = require('zod');
@@ -138,25 +140,64 @@ router.post('/transcriptions', authorizeUser, upload.single('file'), async (req,
 
 });
 
-router.post('/tts', async (req, res) => {
+// POST /api/chats/tts
+router.post('/tts', authorizeUser, async (req, res) => {
   const text = req.body.text;
 
   const speechFilePath = "Basil-PlayAI.wav";
   const model = "playai-tts";
   const voice = "Basil-PlayAI";
-  const responseFormat = "wav";
+  const responseFormat = "mp3";
   
-    const response = await groq.audio.speech.create({
-      model: model,
-      voice: voice,
-      input: text,
-      response_format: responseFormat
-    });
+  // 1) Generate the audio
+  const response = await groq.audio.speech.create({
+    model: model,
+    voice: voice,
+    input: text,
+    response_format: responseFormat
+  });
 
+  // 2) Turn it into a Node Buffer
+  const arrayBuffer = await response.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  // 3) (Optional) save locally
+  // await fs.promises.writeFile("Basil-PlayAI.wav", wavBuffer);
+
+  // 4) Send it back with the right headers
+  res.set({
+    "Content-Type": "audio/mpeg",
+    "Content-Length": buffer.length,
+    // make browsers treat it as a download if you like:
+    // "Content-Disposition": 'attachment; filename="speech.wav"'
+  });
+  res.send(buffer);
+});
+
+// TESTING GET /api/chats/tts
+router.get('/tts', authorizeUser, async (req, res) => {
+  const { text } = req.query;
+
+  const speechFilePath = "Basil-PlayAI.wav";
+  const model = "playai-tts";
+  const voice = "Basil-PlayAI";
+  const responseFormat = "mp3";
   
-  const buffer = Buffer.from(await response.arrayBuffer());
-  await fs.promises.writeFile(speechFilePath, buffer);
-  res.json("success");
+  // 1) Generate the audio
+  const response = await groq.audio.speech.create({
+    model: model,
+    voice: voice,
+    input: text,
+    response_format: responseFormat
+  }).asResponse(); // get the raw Response
+
+  // tell the client it’s chunked WAV
+  res.setHeader("Content-Type", "audio/mpeg");
+  // no Content-Length → Transfer-Encoding: chunked
+
+  // pipe the Node Readable (PassThrough) directly into Express’s res
+  await pipe(response.body, res);
+  // .pipe(res) would also work, but pipeline() gives you error handling
 });
 
 // POST /api/chats/:chatId/post-public?autoSummarize=true
