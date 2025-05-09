@@ -8,7 +8,7 @@ https://youtu.be/5kuKlZ_bMj4
 
 https://joseph-ampfer.github.io/AI_Chat_220/
 
-# To try out our site, download our repo and:
+# To try out our new site, download our repo and:
 1. Make `.env` file in root
 2. Paste in the configuration we sent
 3. In the terminal from our directory run `npm install`
