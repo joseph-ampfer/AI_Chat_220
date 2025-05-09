@@ -1,4 +1,4 @@
-![desktop demo](./assets/images/demo1.gif)
+![desktop demo](./public/assets/images/demo1.gif)
 
 # Link to Youtube Project Presentation
 
@@ -33,6 +33,6 @@ https://joseph-ampfer.github.io/AI_Chat_220/
 
 # Mobile demo
 <div align="center">  
-  <img src="./assets/images/demo-mobile.gif" width="200" height="auto">
+  <img src="./public/assets/images/demo-mobile.gif" width="200" height="auto">
 </div>
 
