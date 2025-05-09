@@ -4,7 +4,7 @@
 
 https://youtu.be/5kuKlZ_bMj4
 
-# Link to live site (pages)
+# Link to old live site (midterm)
 
 https://joseph-ampfer.github.io/AI_Chat_220/
 
