@@ -19,6 +19,10 @@ https://joseph-ampfer.github.io/AI_Chat_220/
 ***Joey Ampfer***
 - chat page
 - working with groq and other ai api's
+- chat routes, file routes
+- AWS S3 bucket storage
+- Oauth2 with Google
+- manage mongodb chat collection
 
 ***Xander Murphy***
 - sign up/sign in pages
