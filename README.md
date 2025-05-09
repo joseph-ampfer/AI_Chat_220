@@ -11,8 +11,9 @@ https://joseph-ampfer.github.io/AI_Chat_220/
 # To try out our site, download our repo and:
 1. Make `.env` file in root
 2. Paste in the configuration we sent
-3. In terminal run `node server.js`
-4. Click on the link!
+3. In the terminal from our directory run `npm install`
+4. Then run `node server.js`
+5. Click on the link!
 
 # Team and Contributions
 
