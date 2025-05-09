@@ -23,6 +23,8 @@ https://joseph-ampfer.github.io/AI_Chat_220/
 ***Xander Murphy***
 - sign up/sign in pages
 - storage of users
+- hashing of passwords
+- JWT functionality
 
 ***Landen Tomlin***
 - Index page formatting and style
