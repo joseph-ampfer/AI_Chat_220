@@ -186,6 +186,7 @@ function pageButtons(pages) {
   let maxLeft = (state.page - Math.floor(state.window / 2)); // Determine the farthest left a user can go when going through pages.
   let maxRight = (state.page + Math.floor(state.window / 2)); // Determine the farthest right a user can go when going through pages.
 
+  // These sets of conditionals adjust the number that is shown to the left or the right based on how far a user is into the pages.
   if (maxLeft < 1) {
     maxLeft = 1;
     maxRight = state.window;
@@ -240,7 +241,8 @@ function pageButtons(pages) {
 /* Function to load all posts when the page opens */
 async function start() {
   posts = await fetchJSON(ALL_POSTS_URL);
-  renderPosts(posts); // render the posts.
+  currentData = posts;
+  renderPosts(currentData); // render the posts.
 };
 
 start(); // load the posts when the user accesses the page
