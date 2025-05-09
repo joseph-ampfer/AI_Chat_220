@@ -42,18 +42,6 @@ app.get('/:page', (req, res, next) => {
 // Exposes everything in routes at '/api/'
 app.use('/api', apiRoutes);
 
-// ======= TESTING DB Connection =======
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
-
-
-// !TESTING! GET /mongodb
-app.get('/mongodb', async (req, res) => {
-  const cursor = db.collection('users').find();
-  const users = await cursor.toArray();
-  console.log(users);
-  res.json(users);
-});
-// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 // Starting our app
 app.listen(PORT, () => {
