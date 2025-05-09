@@ -35,6 +35,7 @@ https://joseph-ampfer.github.io/AI_Chat_220/
 - Index page formatting and style
 - Pagination and dynamically displaying posts
 - Search bar animation and functionality
+- Optimizing APIs to limit the network strain on users to load public posts
 
 # Mobile demo
 <div align="center">  
