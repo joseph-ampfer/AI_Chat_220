@@ -18,6 +18,8 @@ function authorizeUser(req, res, next) {
         
         // Attach the decoded user info to the request object for access in subsequent handlers
         req.user = {};
+        req.user.name = decoded.name;
+        req.user.picture = decoded.picture;
         req.user.id = decoded.userId;  // e.g., req.user.userId
 
         // Proceed to the next middleware or route handler

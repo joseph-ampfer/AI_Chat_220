@@ -1,7 +1,7 @@
 {
   "name": "Chat 220",
   "short_name": "Chat220",
-  "description": "Chat 220 – your next-gen AI platform",
+  "description": "Chat 220 – your insanely fast AI platform",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
@@ -10,13 +10,13 @@
   "theme_color": "#4a90e2",
   "icons": [
     {
-      "src": "/icons/icon-192x192.png",
+      "src": "/favicons/web-app-manifest-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512x512.png",
+      "src": "/favicons/web-app-manifest-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

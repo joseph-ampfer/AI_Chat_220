@@ -3,16 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AI Chatbot</title>
+    <title>Chat 220 Login</title>
     <!-- Bootstrap CSS -->
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
+    <!-- favicon -->
+    <link rel="icon" type="image/png" href="./favicons/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="./favicons/favicon.svg" />
+    <link rel="shortcut icon" href="./favicons/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./favicons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Chat 220" />
+    <link rel="manifest" href="./favicons/site.webmanifest" />
   </head>
   <body class="d-flex justify-content-center align-items-center vh-100">
     <div class="container">
-      <form class="p-4 border rounded shadow bg-white" style="max-width: 500px; margin: auto;">
+      <form id="login-form" class="p-4 border rounded shadow bg-white" style="max-width: 500px; margin: auto;">
         <h1>Log In to your Account</h1>
 
         <div class="mb-3 mt-3">
@@ -20,7 +27,8 @@
           <div id="g_id_onload"
               data-client_id="263484003919-rbual7nlu1dj1c95uq14blnl707fes94.apps.googleusercontent.com"
               data-login_uri="http://localhost:3030/api/auth/oath2/callback/google"
-              data-auto_prompt="false">
+              data-auto_prompt="true"
+              data-ux_mode="redirect">
           </div>
           <div class="g_id_signin"
               data-type="standard"
@@ -54,11 +62,11 @@
             id="exampleInputPassword1"
           />
         </div>
-        <button type="button" class="btn btn-primary" id="submit">
-          Sign In
+        <button type="submit" class="btn btn-primary" id="submit">
+          Log In
         </button>
-      </form>
-      <div class="mt-3" id="liveAlertPlaceholder"></div>
+        <div class="mt-3" id="liveAlertPlaceholder"></div>
+      </form>   
     </div>
 
     <script
@@ -67,102 +75,159 @@
       crossorigin="anonymous"
     ></script>
     <script>
-      /*
-      const usersBlobApi =
-        "https://jsonblob.com/api/jsonBlob/1344700602931929088";
-      async function getEmails() {
-        let response = await fetch(usersBlobApi, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        });
-        let usersArray = await response.json();
-        return usersArray;
-      }
-      */
-      document
-        .querySelector("#submit")
-        .addEventListener("click", async function () {
-          let userEmail = document
-            .querySelector("#exampleInputEmail1")
-            .value.trim();
-          let userPassword = document
-            .querySelector("#exampleInputPassword1")
-            .value.trim();
-          let alert = document.querySelector("#liveAlertPlaceholder");
 
-          alert.innerHTML = "";
+      // IF redirected from email verification
+      (function() {
+        const params = new URLSearchParams(window.location.search);
+        const verified = params.get('verified');
+        const email  = params.get('email');
+        if (!verified) return;
 
-          if (!userEmail || !userPassword) {
-            alert.innerHTML = `<div class="alert alert-danger alert-dismissible" role="alert">
-                    <div>Email and Password are required to sign into your account</div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                 </div>`;
-            return;
-          }
+        let alert = document.querySelector("#liveAlertPlaceholder");
 
+        if (verified == 'true') {
+          alert.innerHTML = `
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+              🎉 Your email has been verified! You can now log in.
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>`;
+        } else if (verified == 'false') {
+          alert.innerHTML = `
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          ⚠️ The verification link for <strong>${email}</strong> is invalid or expired.
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          <hr>
+          <p class="mb-0">
+            Didn’t get an email?
+            <button id="resend-btn" class="btn btn-sm btn-link">Resend verification email</button>
+          </p>
+        </div>`;
+
+          document
+          .getElementById('resend-btn')
+          .addEventListener('click', async () => {
+            try {
+              const res = await fetch('/api/auth/resend-verification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+              });
+              if (!res.ok) {
+                const err = await res.text();
+                alert.innerHTML = `
+                  <div class="alert alert-warning" role="alert">
+                    ⚠️ ${err || 'Could not resend. Please try again later.'}
+                  </div>
+                `;
+                return;
+              } 
+
+              alert.innerHTML = `
+                  <div class="alert alert-success" role="alert">
+                    📧 Verification email resent. Check your inbox!
+                  </div>
+                `;
+
+            } catch (e) {
+              alert.innerHTML = `
+                <div class="alert alert-danger" role="alert">
+                  ❌ Network error. Please try again.
+                </div>
+              `;
+            }
+          });
+    
+
+        }
+
+        // Optionally remove the query string so refresh doesn’t show it again:
+        history.replaceState(null, '', window.location.pathname);
+      })();
+
+
+      const loginForm = document.getElementById('login-form');
+      const alertEl   = document.getElementById('liveAlertPlaceholder');
+
+      const showAlert = (type, message, dismissible = false) => {
+        const dismissBtn = dismissible
+          ? `<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>`
+          : '';
+        alertEl.innerHTML = `
+          <div class="alert alert-${type}${dismissible ? ' alert-dismissible' : ''}" role="alert">
+            <div>${message}</div>
+            ${dismissBtn}
+          </div>
+        `;
+      };
+
+      const resendVerificationEmail = (email, message=null) => {
+        if (message) {
+          showAlert('warning', `⚠️ ${message} <button id="resend-btn" class="btn btn-sm btn-link">Resend verification email</button>`);
+        }else{
+          showAlert('warning', '⚠️ Your account is not verified. <button id="resend-btn" class="btn btn-sm btn-link">Resend verification email</button>');
+        }
+        
+        document.getElementById('resend-btn').addEventListener('click', async () => {
           try {
-            const response = await fetch('/api/auth/login', {
+            const res = await fetch('/api/auth/resend-verification', {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({email: userEmail, password: userPassword})
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({ email })
             });
-
-            const result = await response.json();
-
-            if (response.ok) {
-              //localStorage.setItem('authToken', result.token); in cookie now
-              let smallUsername = userEmail.substring(0, userEmail.indexOf("@"));
-              localStorage.setItem("username", smallUsername);
-              window.location.href = "/";
+            if (res.ok) {
+              showAlert('success', '📧 Verification email resent! Check your inbox.');
+            } else {
+              showAlert('danger', '❌ Couldn’t resend. Try again later.');
             }
-            else {
-              alert.innerHTML = `<div class="alert alert-danger alert-dismissible" role="alert">
-                    <div>${result.error}</div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-               </div>`;
-            }
-          }
-          catch(err) {
-            alert.innerHTML = `<div class="alert alert-danger alert-dismissible" role="alert">
-                    <div>There was an error logging in</div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-               </div>`;
+          } catch {
+            showAlert('danger', '❌ Couldn’t resend. Try again later.');
           }
         });
-          /*
-          for (let user of users) {
-            if (userEmail == user.email && userPassword == user.password) {
-              isValidUser = true;
-              userBlob = user.blobURL;
-              break;
+      };
+
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email    = loginForm.elements['exampleInputEmail1'].value.trim();
+        const password = loginForm.elements['exampleInputPassword1'].value;
+
+        try {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ email, password })
+          });
+          const result = await res.json();
+
+          // 1) Handle HTTP errors first
+          if (!res.ok) {
+            // 1a) Unverified account
+            if (result.needsVerification) {
+              return resendVerificationEmail(email);
             }
+            // 1b) Other errors
+            return showAlert('danger', result.error, true);
           }
-  
-          if (!isValidUser) {
-            alert.innerHTML = `<div class="alert alert-danger alert-dismissible" role="alert">
-                    <div>Incorrect email or password</div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-               </div>`;
-          } else {
-            let smallUsername = userEmail.substring(0, userEmail.indexOf("@"));
-            localStorage.setItem("username", smallUsername);
-            localStorage.setItem("MyBlobURL", userBlob);
-            window.location.href = "index.html";
-          }
-        });
-        */
+
+          // 2) Success path
+          const username = email.split('@')[0];
+          localStorage.setItem('username', username);
+          window.location.href = '/';
+
+        } catch (err) {
+          showAlert('danger', 'There was an error logging in', true);
+        }
+      });
+
+
+
        // login.js
       document.addEventListener('DOMContentLoaded', () => {
         const params = new URLSearchParams(window.location.search);
         const err = params.get('error');
+        const email = params.get('email');
         if (err) {
           // e.g.:
-          alert(err);
+          resendVerificationEmail(email, err);
           // …or show your own modal, or insert into the DOM…
           history.replaceState({}, '', '/login');
         }

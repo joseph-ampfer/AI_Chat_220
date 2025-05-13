@@ -6,12 +6,14 @@ const app = express();
 const apiRoutes = require('./routes');
 const db = require('./db');
 const cookieParser = require('cookie-parser');
+const servefavicon = require('serve-favicon')
 
 
 // Middleware
 app.use(cookieParser());
 app.use(express.json()); // Parses application/json 
 app.use(express.urlencoded({ extended: true })); // Parses application/x-www-form-urlencoded
+app.use(servefavicon(path.join(__dirname, 'public','favicons', 'favicon.ico')));
 
 // Static public files
 app.use(express.static('public'));

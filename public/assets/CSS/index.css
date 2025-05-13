@@ -104,3 +104,14 @@ footer {
 .card-custom .card-link:hover {
   text-decoration: underline;
 }
+.userPic {
+  height: 26px;
+  aspect-ratio: 1;
+  border-radius: 100px;
+  margin-left: 1rem;
+}
+#pagination-wrapper {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}

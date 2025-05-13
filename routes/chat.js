@@ -332,7 +332,7 @@ router.post('/:chatId/messages', authorizeUser, async (req, res) => {
 
   const capablity = modelCapabilities[model] || { vision: false };
 
-  console.log(parseResult.data);
+  //console.log(parseResult.data);
 
   // Build content in one place
   let contentPayload;
@@ -399,6 +399,7 @@ router.post('/:chatId/messages', authorizeUser, async (req, res) => {
       aiResponse += chunk.choices[0]?.delta?.content || "";
       usage = chunk.usage; // Total usage is only in last chunk, otherwise null
     }
+    //console.log(aiResponse);
    
     // const chatCompletion = await getGroqChatCompletion(conversation, model);
     // const aiResponse = chatCompletion.choices[0]?.message?.content || "";
@@ -412,7 +413,8 @@ router.post('/:chatId/messages', authorizeUser, async (req, res) => {
   } catch (err) {
     console.error('Chat error:', err.message);
     //res.status(500).json({ error: 'Something went wrong' });
-    res.write('There was an error: ', err);
+    //res.write(`2389fdsdjk32a1: ${err.message}`);
+    res.write('There was an error: ', err.message);
   } finally {
     res.end();
   }

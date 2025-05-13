@@ -188,14 +188,19 @@ pre {
   justify-content: space-between;
 }
 .meta-logo {
-  height: 32px;
-  aspect-ratio: 1;
-  padding: 4px;
+  width: 31px;
+  height: 31px;
+  object-fit: contain;
+  /* aspect-ratio: 1; */
+  /* padding: 4px; */
 }
 .deepseek-logo {
+  /* height: 31px; */
+  width: 31px;
   height: 31px;
-  aspect-ratio: 1;
-  padding: 3px;
+  object-fit: contain;
+  /* aspect-ratio: 1; */
+  /* padding: 3px; */
 }
 .reasoning-model {
   background-color: #ffd8df;
@@ -257,7 +262,7 @@ pre {
 .blockquote-footer {
   margin-right: 0.75rem;
 }
-#ttsBtn {
+.ttsBtn {
   color: #6c757d;
 }
 .img-logo {
@@ -273,6 +278,29 @@ pre {
     brightness(95%) /* fine-tune lightness */
     contrast(102%); /* sharpen edges */
 
+}
+details {
+  position: relative;
+  color: #6c757d;
+  /* margin-left: 2rem; */
+  /* margin-right: 2rem; */
+  font-style: italic;
+}
+/* details summary {
+  margin-left: -2rem;
+} */
+details:before {
+  content: "";
+  position: absolute;
+  top: 1.75rem;
+  left: 0rem;
+  width: 1px;
+  height: calc(100% - 1.75rem);
+  background-color: #6c757d;
+}
+details > :not(summary) {
+  margin-left: 1rem;
+  /* margin-right: 2rem; */
 }
 /* @media (max-width: 560px) {
   .chat-history {

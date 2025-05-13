@@ -71,7 +71,7 @@ const textModelsHTML = `
   <li class="d-flex justify-content-between">
     <a class="dropdown-item model-item" href="#" data-model="deepseek-r1-distill-llama-70b" >
       <div>
-        <img class="deepseek-logo" src="./assets/images/deepseek-logo.png" alt="" >
+        <img class="deepseek-logo" src="./assets/images/deepseek_logo.png" alt="" >
         <span>deepseek-r1-distill-llama-70b</span>
       </div>
       <img class="reasoning-model" src="./assets/images/brain.svg" title="Reasoning model" >
@@ -166,7 +166,8 @@ let chatId;
 let currentChatId;
 let uploadedFileId;
 let isImageChat;
-let publicChat
+let publicChat;
+let cachedAudio = {};
 
 const { Marked } = globalThis.marked;
 const { markedHighlight } = globalThis.markedHighlight;
@@ -396,10 +397,16 @@ function appendMessage(message, isUser = true, model2 = "Unkown model") {
   const messageDiv = document.createElement("div");
   messageDiv.classList.add("mb-3");
   if (isUser) {
-    messageDiv.innerHTML = `<div class="bg-primary user-message" >${message}</div>`;
+    messageDiv.innerHTML = `<div class="bg-primary user-message" >${escapeHTML(message)}</div>`;
   } else {
     // Parses markdown and highlights with hljs
-    messageDiv.innerHTML = marked.parse(message);
+    const safeHTML = message
+      .replace(/<think>\n/g, '<details class="mb-3"><summary>Thoughts…</summary> <p class="mt-2">')
+      .replace(/<\/think>\n/g, '</details>');
+    
+    // Parse the streamed content and display!!!
+    const formattedHTML =  DOMPurify.sanitize(marked.parse(safeHTML));
+    messageDiv.innerHTML = formattedHTML;
 
     // 1) language labels
     messageDiv.querySelectorAll("pre code").forEach(block => {
@@ -441,7 +448,11 @@ function appendMessage(message, isUser = true, model2 = "Unkown model") {
 
 
     // Create copy button for chatContent
-    const copyButton = makeCopyBtn(message);
+    const parts = message.split("</think>\n");
+    const copyButton = makeCopyBtn(parts.length > 1 ? parts[1] : message);
+
+    // Creat TTS button for chatContent
+    const ttsBtn = makeTtsBtn(parts.length > 1 ? parts[1] : message);
 
     // Make div for bottom info
     const bottomInfo = document.createElement("div");
@@ -452,6 +463,7 @@ function appendMessage(message, isUser = true, model2 = "Unkown model") {
     modelSpan.innerText = model2;
     bottomInfo.appendChild(modelSpan);
     bottomInfo.appendChild(copyButton);
+    bottomInfo.appendChild(ttsBtn);
 
     // Append copy button to bottom of response box
     messageDiv.appendChild(bottomInfo);
@@ -913,6 +925,11 @@ async function sendMessageToAI(message) {
       const decoder = new TextDecoder();
       let aiText = '';
 
+      // Create thinking box
+      // const thinkingContent = document.createElement('details');
+      // thinkingContent.classList.add('thinking');
+      // chatMessages.appendChild(thinkingContent);
+
       // Create chat box
       const chatContent = document.createElement('div');
       chatContent.classList.add('prose', 'prose-invert', 'max-w-none', 'chat-content');
@@ -934,9 +951,14 @@ async function sendMessageToAI(message) {
         // Decode the 0's and 1's into text, add to aiText
         const textChunk = decoder.decode(value, { stream: true });
         aiText += textChunk;
+        // replace _all_ occurrences of <think> / </think>
+        const safeHTML = aiText
+          .replace(/<think>\n/g, '<details open class="mb-3"><summary>Thoughts…</summary> <p class="mt-2">')
+          .replace(/<\/think>\n/g, '</details>');
         
         // Parse the streamed content and display!!!
-        const formattedHTML = marked.parse(aiText);
+        //const formattedHTML = marked.parse(aiText);
+        const formattedHTML =  DOMPurify.sanitize(marked.parse(safeHTML));
         chatContent.innerHTML = formattedHTML;
 
         // Inject CODE language labels after rendering
@@ -979,10 +1001,11 @@ async function sendMessageToAI(message) {
 
 
       // Create copy button for chatContent
-      const copyButton = makeCopyBtn(aiText);
+      const parts = aiText.split("</think>\n");
+      const copyButton = makeCopyBtn(parts.length > 1 ? parts[1] : aiText);
 
       // Creat TTS button for chatContent
-      //const ttsBtn = makeTtsBtn(aiText);
+      const ttsBtn = makeTtsBtn(parts.length > 1 ? parts[1] : aiText);
 
       // Make div for bottom info
       const bottomInfo = document.createElement("div");
@@ -993,17 +1016,19 @@ async function sendMessageToAI(message) {
       modelSpan.innerText = model;
       bottomInfo.appendChild(modelSpan);
       bottomInfo.appendChild(copyButton);
-      //bottomInfo.appendChild(ttsBtn);
+      bottomInfo.appendChild(ttsBtn);
 
       // Append copy button to bottom of response box
       chatContent.appendChild(bottomInfo);
+
+      document.querySelectorAll("details").forEach(details => { details.removeAttribute('open'); })
 
       clearQueryString();
       
     }
   } catch (error) {
     console.error("Request failed:", error);
-    appendMessage("🚫 Oops! Something went wrong. Please try again.", false);
+    appendMessage("🚫 Oops! Something went wrong. Please try again in a few minutes or try another model.", false);
   } finally {
     uploadedImageBase64 = null;
     imageInput.value = "";
@@ -1044,22 +1069,93 @@ function makeCopyBtn(toCopy, className='') {
   return copyButton;
 }
 
-function makeTtsBtn(message) {
-  const ttsBtn = document.createElement('button');
-  ttsBtn.innerHTML = `
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-volume-up" viewBox="0 0 16 16">
+const volumeSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-volume-up" viewBox="0 0 16 16">
     <path d="M11.536 14.01A8.47 8.47 0 0 0 14.026 8a8.47 8.47 0 0 0-2.49-6.01l-.708.707A7.48 7.48 0 0 1 13.025 8c0 2.071-.84 3.946-2.197 5.303z"/>
     <path d="M10.121 12.596A6.48 6.48 0 0 0 12.025 8a6.48 6.48 0 0 0-1.904-4.596l-.707.707A5.48 5.48 0 0 1 11.025 8a5.48 5.48 0 0 1-1.61 3.89z"/>
     <path d="M10.025 8a4.5 4.5 0 0 1-1.318 3.182L8 10.475A3.5 3.5 0 0 0 9.025 8c0-.966-.392-1.841-1.025-2.475l.707-.707A4.5 4.5 0 0 1 10.025 8M7 4a.5.5 0 0 0-.812-.39L3.825 5.5H1.5A.5.5 0 0 0 1 6v4a.5.5 0 0 0 .5.5h2.325l2.363 1.89A.5.5 0 0 0 7 12zM4.312 6.39 6 5.04v5.92L4.312 9.61A.5.5 0 0 0 4 9.5H2v-3h2a.5.5 0 0 0 .312-.11"/>
   </svg>`;
-  ttsBtn.classList.add('btn');
-  ttsBtn.setAttribute('id', 'ttsBtn');
+const smallSpinner = `<div class="spinner-border spinner-border-sm" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>`;
+
+function makeTtsBtn(message) {
+  // --- Elements & state ---
+  const container = document.createElement('div');
+  const ttsBtn = document.createElement('button');
+  ttsBtn.innerHTML = volumeSVG;
+  ttsBtn.classList.add('btn', 'ttsBtn');
+  container.appendChild(ttsBtn);
 
   const blobBtn = document.createElement('button');
   blobBtn.innerText = "Fetch+Blob";
 
   const audioEl = document.createElement('audio');
   audioEl.hidden = true;
+  container.appendChild(audioEl);
+
+  let loading = false;
+
+  audioEl.addEventListener('ended', () => {
+    ttsBtn.innerHTML = volumeSVG;
+  });
+
+  ttsBtn.addEventListener('click', async () => {
+    if (loading) {
+      console.log('loading wait');
+      return
+    };
+
+    if (audioEl.paused) {
+      // Start playing or fetch
+      // check if cached from audioCache or just look at audioEl.src...
+      if (cachedAudio[message]) {
+        audioEl.src = cachedAudio[message];
+        console.log('playing cachedAudio');
+        await audioEl.play();
+        ttsBtn.innerHTML = stopIcon;
+        return;
+      } else {
+        // Spinner loading
+        loading = true;
+        ttsBtn.innerHTML = smallSpinner;
+        
+        // Approach B: fetch then blob
+        const res = await fetch('/api/chats/tts', {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json' },
+          body: JSON.stringify({ text: message })
+        });
+
+        if (!res.ok) {
+          const u = new SpeechSynthesisUtterance(message);
+          speechSynthesis.speak(u);
+          console.log('error getting audio: ', await res.text());
+
+          loading = false;
+          ttsBtn.innerHTML = volumeSVG;
+          return;
+        }
+
+        const blob = await res.blob();
+        const auidioURL = URL.createObjectURL(blob);
+        audioEl.src    = auidioURL;
+        audioEl.hidden = false;
+        await audioEl.play();
+        loading = false;
+
+        cachedAudio[message] = auidioURL;
+
+        // show stop
+        ttsBtn.innerHTML = stopIcon;
+      }
+    } else {
+      // already playing -> pause and reset
+      audioEl.pause();
+      audioEl.currentTime = 0;
+      ttsBtn.innerHTML = volumeSVG;
+    }
+
+  });
 
   // For testing performance... later
   // async function measureStart(fn) {
@@ -1076,15 +1172,15 @@ function makeTtsBtn(message) {
   // }
 
   // Add tts functionality
-  ttsBtn.addEventListener('click', async () => {
-    //const delta = await measureStart(async() => {
-      // point <audio> directly at your chunked endpoint
-      audioEl.src = `/api/chats/tts?text=${message}`;  // will produce a chunked response
-      audioEl.hidden = false;
-      audioEl.play();
-    //});
-    //console.log(`Stream approach start latency: ${delta.toFixed(1)}ms`);
-  });
+  // ttsBtn.addEventListener('click', async () => {
+  //   //const delta = await measureStart(async() => {
+  //     // point <audio> directly at your chunked endpoint
+  //     audioEl.src = `/api/chats/tts?text=${message}`;  // will produce a chunked response
+  //     audioEl.hidden = false;
+  //     audioEl.play();
+  //   //});
+  //   //console.log(`Stream approach start latency: ${delta.toFixed(1)}ms`);
+  // });
 
   // blobBtn.addEventListener('click', async () => {
   //   const delta = await measureStart(async () => {
@@ -1494,4 +1590,12 @@ if (window.visualViewport) {
 function clearQueryString() {
   const cleanUrl = window.location.origin + window.location.pathname;
   history.replaceState({}, document.title, cleanUrl);
+}
+function escapeHTML(str) {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
