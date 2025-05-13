@@ -18,7 +18,7 @@ app.use(servefavicon(path.join(__dirname, 'public','favicons', 'favicon.ico')));
 // Static public files
 app.use(express.static('public'));
 
-const PORT = 3030;
+const PORT = process.env.PORT || 3030;
 
 /* ==== HTML ENDPOINTS ===== */
 // app.get('/', (req, res)=> {
