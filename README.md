@@ -2,17 +2,18 @@
 
 # Link to Youtube Project Presentation
 
-https://youtu.be/5kuKlZ_bMj4
+https://youtu.be/ECylAQYI8xE
 
-# Link to live site (pages)
+# Link to old live site (midterm)
 
 https://joseph-ampfer.github.io/AI_Chat_220/
 
-# To try out our site, download our repo and:
+# To try out our new site, download our repo and:
 1. Make `.env` file in root
 2. Paste in the configuration we sent
-3. In terminal run `node server.js`
-4. Click on the link!
+3. In the terminal from our directory run `npm install`
+4. Then run `node server.js`
+5. Click on the link!
 
 # Team and Contributions
 
@@ -34,6 +35,7 @@ https://joseph-ampfer.github.io/AI_Chat_220/
 - Index page formatting and style
 - Pagination and dynamically displaying posts
 - Search bar animation and functionality
+- Optimizing APIs to limit the network strain on users to load public posts
 
 # Mobile demo
 <div align="center">  
