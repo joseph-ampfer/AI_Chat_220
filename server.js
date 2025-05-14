@@ -16,7 +16,7 @@ app.use(express.urlencoded({ extended: true })); // Parses application/x-www-for
 app.use(servefavicon(path.join(__dirname, 'public','favicons', 'favicon.ico')));
 
 // Static public files
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 const PORT = process.env.PORT || 3030;
 

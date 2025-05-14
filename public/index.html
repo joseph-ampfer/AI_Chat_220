@@ -34,9 +34,9 @@
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav">
-          <li class="nav-item">
+          <!-- <li class="nav-item">
             <a class="nav-link active" aria-current="page" href="#">Home</a>
-          </li>
+          </li> -->
           <li class="nav-item">
             <a class="nav-link" href="chat">Chat with AI</a>
           </li>
@@ -49,14 +49,14 @@
   <!-- Search Bar section that will hover above a gif of the AI model in action -->
   <div class="container-fluid mb-5 position-relative" id="searcharea">
     <div class="d-flex flex-column align-items-center">
-      <h1 class="display-3 fw-bold text-white" id="welcome">Welcome to Chat 220!</h1>
-      <h3 class="fw-bold text-white">See what others have chatted!</h3>
+      <h1 class="display-3 fw-bold text-white text-center" id="welcome">Welcome to Chat 220!</h1>
+      <h3 class="fw-bold text-white text-center mb-3">See what others have chatted!</h3>
 
     </div>
   </div>
 
   <form class="d-flex start" role="search" id="searchbar" onsubmit="return false;">
-    <input class="form-control me-2" type="search" placeholder="Search our Chats" aria-label="Search"
+    <input class="form-control me-3 ms-3" type="search" placeholder="Search our Chats" aria-label="Search"
       id="userSearch">
   </form>
 
@@ -94,7 +94,7 @@
       if (!res.ok) {
         const signup = document.createElement('span');
         signup.classList.add('nav-item', 'ms-auto');
-        signup.innerHTML = `<a class="nav-link" href="signup">Signup</a>`;
+        signup.innerHTML = `<a class="nav-link login-out" href="signup">Signup</a>`;
 
         document.getElementById('navbarNav').appendChild(signup);
       } else {
@@ -103,7 +103,7 @@
 
         const logout = document.createElement('span');
         logout.classList.add('nav-item', 'ms-auto');
-        logout.innerHTML = `<a class="nav-link" href="#">Logout</a>`;
+        logout.innerHTML = `<a class="nav-link login-out" href="#">Logout</a>`;
         logout.addEventListener('click', async () => {
           await fetch('api/auth/session', {method: 'DELETE'});
           location.reload();

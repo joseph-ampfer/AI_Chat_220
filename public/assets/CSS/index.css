@@ -115,3 +115,12 @@ footer {
   justify-content: center;
   gap: 4px;
 }
+@media (max-width: 990px) {
+  .userPic {
+    margin-left: auto !important;
+    margin-top: 0.5rem;
+  }
+  .login-out {
+    margin-top: 1rem;
+  }
+}

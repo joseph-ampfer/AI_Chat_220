@@ -22,17 +22,9 @@ const imageInput = document.getElementById("imageUpload");
 const imageInputLabel = document.getElementById("imageUploadLabel");
 const filePreview = document.getElementById("filePreview");
 const chatSection = document.getElementById("chat-section");
+const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
 const textModelsHTML = `
-  <li>
-    <a class="dropdown-item model-item" data-model="gemma2-9b-it" href="#" >
-      <div >
-        <img src="./assets/images/gemini-logo.svg" >
-        <span>gemma2-9b-it</span>
-      </div>
-
-    </a>
-  </li>
-
+  
   <li>
     <a class="dropdown-item model-item" href="#" data-model="llama-3.3-70b-versatile" >
       <div>
@@ -40,6 +32,15 @@ const textModelsHTML = `
         <span>llama-3.3-70b-versatile</span>
       </div>
       
+    </a>
+  </li>
+  <li>
+    <a class="dropdown-item model-item" data-model="gemma2-9b-it" href="#" >
+      <div >
+        <img src="./assets/images/gemini-logo.svg" >
+        <span>gemma2-9b-it</span>
+      </div>
+
     </a>
   </li>
   <li>
@@ -81,7 +82,7 @@ const textModelsHTML = `
     <a class="dropdown-item model-item" href="#" data-model="meta-llama/llama-4-maverick-17b-128e-instruct" >
       <div>
         <img class="meta-logo" src=" ./assets/images/meta-logo.png"   alt="" data-csiid="8ggYaKa4JoH_p84P04W_4Qo_3" data-atf="1">
-        <span>meta-llama/llama-4-maverick-17b-128e-instruct</span>
+        <span>llama-4-maverick-17b-128e-instruct</span>
       </div>
       <img class="vision-model" src="./assets/images/eye.svg" title="Supports image uploads and analysis">
     </a>
@@ -90,7 +91,7 @@ const textModelsHTML = `
     <a class="dropdown-item model-item" href="#" data-model="meta-llama/llama-4-scout-17b-16e-instruct" >
       <div>
         <img class="meta-logo" src=" ./assets/images/meta-logo.png"   alt="" data-csiid="8ggYaKa4JoH_p84P04W_4Qo_3" data-atf="1">
-        <span>meta-llama/llama-4-scout-17b-16e-instruct</span>
+        <span>llama-4-scout-17b-16e-instruct</span>
       </div>
       <img class="vision-model" src="./assets/images/eye.svg" title="Supports image uploads and analysis">
     </a>
@@ -158,7 +159,7 @@ const textToImageModels = ['@cf/black-forest-labs/flux-1-schnell', '@cf/runwayml
 let conversation = [];
 let blobData = {};
 let currentChatIndex = -1;
-let model = modelBtn.innerText.trim();
+let model = DEFAULT_MODEL;
 let uploadedImageBase64 = null;
 let modelTracking = {};
 let selectedPublicChat = {};
@@ -327,13 +328,13 @@ function newChat() {
   document.querySelector(".selectedChat")?.classList.remove("selectedChat");
   // Make dropdown and model correct
   if (textToImageModels.includes(model)) {
-    modelBtn.innerText = "gemma2-9b-it";
-    model = "gemma2-9b-it";
+    modelBtn.innerText = DEFAULT_MODEL;
+    model = DEFAULT_MODEL;
   } else {
     modelBtn.innerText = model;
   }
   modelDropdown.innerHTML = textModelsHTML;
-  //model = "gemma2-9b-it";
+  //model = DEFAULT_MODEL;
   // Model select
   attachModelDropdownListeners();
 
@@ -577,10 +578,10 @@ async function loadPublicChatById(chatId) {
       imageModel = true;
       attachModelDropdownListeners();
     } else {
-      modelBtn.innerText = "gemma2-9b-it";
+      modelBtn.innerText = DEFAULT_MODEL;
       modelDropdown.innerHTML = textModelsHTML;
       attachModelDropdownListeners();
-      model = "gemma2-9b-it";
+      model = DEFAULT_MODEL;
     }
 
     imageInput.classList.add("d-none");
@@ -650,10 +651,10 @@ async function loadChatByID(chatId) {
       imageModel = true;
       attachModelDropdownListeners();
     } else {
-      modelBtn.innerText = "gemma2-9b-it";
+      modelBtn.innerText = DEFAULT_MODEL;
       modelDropdown.innerHTML = textModelsHTML;
       attachModelDropdownListeners();
-      model = "gemma2-9b-it";
+      model = DEFAULT_MODEL;
     }
 
     imageInput.classList.add("d-none");
@@ -894,7 +895,7 @@ async function sendMessageToAI(message) {
       loader.classList.add('placeholder-glow');
       const sp = document.createElement('span');
       sp.classList.add('placeholder', 'text');
-      sp.style.width = "15%";
+      //sp.style.width = "15%";
       sp.innerText = "Loading...";
       loader.appendChild(sp);
       chatMessages.appendChild(loader);
@@ -1363,7 +1364,8 @@ async function generateImage(message) {
     "align-items-center",
     "justify-content-center"
   );
-  placeholder.style.width = "400px";
+  placeholder.style.width = "100%";
+  placeholder.style.maxWidth = "400px"
   placeholder.style.height = "400px";
   placeholder.style.margin = "";
   placeholder.innerHTML = `

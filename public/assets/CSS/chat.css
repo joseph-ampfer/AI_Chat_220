@@ -261,6 +261,7 @@ pre {
 
 .blockquote-footer {
   margin-right: 0.75rem;
+  text-transform: capitalize;
 }
 .ttsBtn {
   color: #6c757d;
@@ -302,6 +303,9 @@ details > :not(summary) {
   margin-left: 1rem;
   /* margin-right: 2rem; */
 }
+a.dropdown-item.model-item div span , #modelSelect-btn {
+  text-transform: capitalize;
+}
 /* @media (max-width: 560px) {
   .chat-history {
     position: fixed;
@@ -318,5 +322,9 @@ details > :not(summary) {
   }
   #nav-sidebar-toggle {
     display: none !important;
+  }
+  .userPic {
+    margin-left: auto !important;
+    margin-top: 0.5rem;
   }
 }
